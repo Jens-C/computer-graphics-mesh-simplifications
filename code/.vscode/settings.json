@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "assert.h": "c",
+        "stdlib.h": "c",
+        "main.C": "cpp",
+        "camera.C": "cpp",
+        "boundingbox.C": "cpp",
+        "cstdlib": "cpp",
+        "edge.C": "cpp"
+    }
+}
