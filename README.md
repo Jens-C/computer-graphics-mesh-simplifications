@@ -1,1 +1,2 @@
-# computer-graphics-mesh-simplifications
+# computer-graphics-mesh-simplification
+
