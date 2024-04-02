@@ -62,6 +62,9 @@ public:
   void Paint(ArgParser *args);
   void LoopSubdivision();
   void Simplification(int target_tri_count);
+  void collapseEdge(Edge* triangle);
+  Edge* selectEdgeToCollapse();
+  void removeUnusedVertices();
 
 private:
 

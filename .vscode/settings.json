@@ -1,0 +1,11 @@
+{
+    "files.associations": {
+        "boundingbox.C": "cpp",
+        "camera.C": "cpp",
+        "main.C": "cpp",
+        "glCanvas.C": "cpp",
+        "edge.C": "cpp",
+        "mesh.C": "cpp",
+        "iostream": "cpp"
+    }
+}

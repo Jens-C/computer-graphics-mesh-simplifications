@@ -187,8 +187,18 @@ void Mesh::Load(const char *input_file) {
       assert (c >= 0 && c < numVertices());
 
       addTriangle(getVertex(a),getVertex(b),getVertex(c));
-      if (d > -1) { assert (d < numVertices()); addTriangle(getVertex(a),getVertex(c),getVertex(d)); }
-      if (e > -1) { assert (e < numVertices()); addTriangle(getVertex(a),getVertex(d),getVertex(e)); }
+      getVertex(a)->incrementTriangleCount();
+      getVertex(b)->incrementTriangleCount();
+      getVertex(c)->incrementTriangleCount();
+      if (d > -1) { 
+        assert (d < numVertices()); addTriangle(getVertex(a),getVertex(c),getVertex(d));
+        getVertex(d)->incrementTriangleCount();
+        }
+      if (e > -1) { 
+        assert (e < numVertices()); 
+        addTriangle(getVertex(a),getVertex(d),getVertex(e));
+        getVertex(e)->incrementTriangleCount();
+        }
     } else if (!strcmp(token,"e")) {
       int num = sscanf (line, "%s %s %s %s\n",token,atoken,btoken,ctoken);
       assert (num == 4);
@@ -332,7 +342,51 @@ void Mesh::LoopSubdivision() {
 // =================================================================
 
 void Mesh::Simplification(int target_tri_count) {
-  printf ("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
+    printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
+
+    // Perform simplification until the target number of triangles is reached
+    while (numTriangles() > target_tri_count) {
+        // Select an edge to collapse based on some simplification criteria
+        Edge* edge_to_collapse = selectEdgeToCollapse();
+        printf("Edge to collapse: %d %d\n", (*edge_to_collapse)[0]->getIndex(), (*edge_to_collapse)[1]->getIndex());
+        
+        // Collapse the selected edge
+        collapseEdge(edge_to_collapse);
+    }
 }
+
+void Mesh::collapseEdge(Edge* edge) {
+if (edge == NULL) return;
+
+    // Get vertices and triangles involved in the edge collapse
+    Vertex* v1 = (*edge)[0];
+    Vertex* v2 = (*edge)[1];
+    Triangle* t1 = edge->getTriangle();
+    Triangle* t2 = edge->getOpposite() != NULL ? edge->getOpposite()->getTriangle() : NULL;
+    printf("Collapse edge: %d %d\n", v1->getIndex(), v2->getIndex());
+    // Update remaining vertex position (e.g., average position)
+    Vec3f newPos = (v1->get() + v2->get()) *0.5;
+    v1->set(newPos);
+    Vec3f newPos2 = newPos;
+    v2->set(newPos);
+    
+    //there are edges that are boundary edges because of the triangle deletion
+
+
+
+    // Remove the edge and triangles from the mesh
+    removeTriangle(t1);
+    printf("t1 is removed");
+    
+
+}
+
+
+Edge* Mesh::selectEdgeToCollapse() {
+    // For simplicity, let's just select the first triangle
+    return edges->ChooseRandom();
+}
+
+
 
 // =================================================================

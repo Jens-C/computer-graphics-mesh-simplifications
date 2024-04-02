@@ -16,7 +16,7 @@ public:
 
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Vertex(int i, const Vec3f &pos) : position(pos) { index = i; }
+  Vertex(int i, const Vec3f &pos) : position(pos), triangleCount(0) { index = i; }
   virtual ~Vertex() { }
   
   // =========
@@ -26,11 +26,16 @@ public:
   double y() const { return position.y(); }
   double z() const { return position.z(); }
   const Vec3f& get() const { return position; }
+  int getTriangleCount() const { return triangleCount; }
 
   // =========
   // MODIFIERS
   void set(Vec3f v) { position = v; }
   void set(double x, double y, double z) { position.Set(x,y,z); }
+
+
+  void incrementTriangleCount() { triangleCount++; }
+  void decrementTriangleCount() { triangleCount--; }
 
 private:
 
@@ -51,6 +56,9 @@ private:
   // versions of this data structure they have a pointer to one of
   // their incoming edges.  However, this data is very complicated to
   // maintain during mesh manipulation.
+
+    // Count of triangles associated with this vertex
+  int triangleCount;
 
 };
 
