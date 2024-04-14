@@ -8,6 +8,7 @@
 #include "triangle.h"
 #include "vertex_parent.h"
 #include "glCanvas.h"
+#include "iostream"
 
 #define INITIAL_VERTEX 10000
 #define INITIAL_EDGE 10000
@@ -361,29 +362,55 @@ if (edge == NULL) return;
     // Get vertices and triangles involved in the edge collapse
     Vertex* v1 = (*edge)[0];
     Vertex* v2 = (*edge)[1];
+    //get the triangles that are connected to the edge
     Triangle* t1 = edge->getTriangle();
-    Triangle* t2 = edge->getOpposite() != NULL ? edge->getOpposite()->getTriangle() : NULL;
-    printf("Collapse edge: %d %d\n", v1->getIndex(), v2->getIndex());
+    Triangle* t2 = edge->getOpposite()->getTriangle();
+    //Triangle* t2 = edge->getOpposite() != NULL ? edge->getOpposite()->getTriangle() : NULL;
+    printf("Collapse triangles: %d %d\n", t1->getEdge()->getVertex()->getIndex(), t2->getEdge()->getVertex()->getIndex());
+    std::cout<<(*t1)[0]->get()<<(*t1)[1]->get()<<(*t1)[2]->get()<<std::endl;
+    std::cout<<(*t2)[0]->get()<<(*t2)[1]->get()<<(*t2)[2]->get()<<std::endl;
     // Update remaining vertex position (e.g., average position)
-    Vec3f newPos = (v1->get() + v2->get()) *0.5;
+    Vec3f newPos = (v1->get() + v2->get()) * 0.5;
     v1->set(newPos);
-    Vec3f newPos2 = newPos;
     v2->set(newPos);
     
-    //there are edges that are boundary edges because of the triangle deletion
+  // Get the next and previous half-edges of the edge
+    Edge* nextEdge = edge->getNext()->getOpposite();
+    Edge* prevEdge = edge->getNext()->getNext()->getOpposite();
+
+  
+    nextEdge->clearOpposite();
+    prevEdge->clearOpposite();
+    nextEdge->setOpposite(prevEdge);
+   
 
 
+    // Get the other triangle of the edge that is colapsed
+    Edge* oppositeEdge = edge->getOpposite();
+    Edge* oppositeNext = oppositeEdge->getNext()->getOpposite();
+    Edge* oppositePrev = oppositeEdge->getNext()->getNext()->getOpposite();
+    oppositeNext->clearOpposite();
+    oppositePrev->clearOpposite();
+    oppositeNext->setOpposite(oppositePrev);
 
+    
+
+    //TODOthere are edges that are boundary edges because of the triangle deletion
+    
     // Remove the edge and triangles from the mesh
     removeTriangle(t1);
+    removeTriangle(t2);
     printf("t1 is removed");
+
+    edges->Print();
     
 
 }
 
 
 Edge* Mesh::selectEdgeToCollapse() {
-    // For simplicity, let's just select the first triangle
+    // for now a random edge is selected
+    Edge* edg = edges->ChooseRandom();
     return edges->ChooseRandom();
 }
 

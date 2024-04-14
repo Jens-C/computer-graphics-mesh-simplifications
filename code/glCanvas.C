@@ -150,8 +150,8 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
     Render();
     break;
   case 'd': case 'D':
-    mesh->Simplification((int)floor(0.9*mesh->numTriangles()));
-    //mesh->Simplification(mesh->numTriangles()-1);
+    //mesh->Simplification((int)floor(0.9*mesh->numTriangles()));
+    mesh->Simplification(mesh->numTriangles()-1);
 
     Render();
     break;

@@ -51,6 +51,7 @@ public:
   void clearOpposite() { 
     if (opposite == NULL) return; 
     assert (opposite->opposite == this); 
+    
     opposite->opposite = NULL;
     opposite = NULL; 
   }
