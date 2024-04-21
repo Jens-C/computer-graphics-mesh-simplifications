@@ -6,7 +6,7 @@
 #include "edge.h"
 
 // ===========================================================
-
+// contains only one edge, but with getNext function of an edge we can access all 3 edges
 class Triangle {
 
 public:
@@ -14,10 +14,12 @@ public:
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
   Triangle() {
-    edge = NULL; }
+    edge = NULL; 
+  }
+
   ~Triangle() {}
 
-  // here's the hash function to use for triangles so they
+  // here's a helper voor the hash function for triangles so they
   // can be efficiently accessed within the Bag data structure
   static void extract_func(Triangle *t, int &a, int &b, int &c) {
     a = (*t)[0]->getIndex(); 
@@ -29,15 +31,20 @@ public:
   // ACCESSORS
   Vertex* operator[](int i) const { 
     assert (edge != NULL);
-    if (i==0) return edge->getVertex();
-    if (i==1) return edge->getNext()->getNext()->getVertex();
-    if (i==2) return edge->getNext()->getVertex();
+    if (i==0) 
+      return edge->getVertex();
+    if (i==1) 
+      return edge->getNext()->getNext()->getVertex();
+    if (i==2) 
+      return edge->getNext()->getVertex();
     assert(0);
   }
+
   Edge* getEdge() { 
     assert (edge != NULL);
     return edge; 
   }
+  
   void setEdge(Edge *e) {
     assert (edge == NULL);
     edge = e;

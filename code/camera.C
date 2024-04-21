@@ -21,11 +21,15 @@ Camera::Camera(Vec3f c, Vec3f d, Vec3f u) {
 PerspectiveCamera::PerspectiveCamera(Vec3f c, Vec3f d, Vec3f u, float a) : Camera(c,d,u) {
   angle = a;
 
+  // Calculates the center point of the screen by adding the direction vector to the camera center.
   Vec3f screenCenter = center + direction;
+  // Calculates the height of the screen using the tangent of half the angle. This assumes that the angle represents the field of view in radians.
   float screenHeight = tan(angle/2.0);
-
+  // Calculates the lower-left corner of the screen by subtracting half the height in the screen up and horizontal directions from the screen center.
   lowerLeft = screenCenter - (getScreenUp() * screenHeight) - (getHorizontal() * screenHeight);
+  // Calculates the vector representing the horizontal axis of the screen by scaling the horizontal direction by twice the screen height.
   xAxis = getHorizontal() * 2 * screenHeight;
+  // Calculates the vector representing the vertical axis of the screen by scaling the screen up direction by twice the screen height.
   yAxis = getScreenUp() * 2 * screenHeight;
 }
 
@@ -35,12 +39,13 @@ PerspectiveCamera::PerspectiveCamera(Vec3f c, Vec3f d, Vec3f u, float a) : Camer
 // Create a camera with the appropriate dimensions that
 // crops the screen in the narrowest dimension.
 
+// This function configures the OpenGL projection matrix for the perspective camera based on the camera's angle and the dimensions of the viewport.
 void PerspectiveCamera::glInit(int w, int h) {
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
 
   float aspect = float(w)/float(h);
-  float asp_angle = angle * 180/M_PI;
+  float asp_angle = angle * 180 / M_PI;
   if (aspect > 1) asp_angle /= aspect;
 
   gluPerspective(asp_angle, aspect, 1, 100.0);
@@ -76,7 +81,7 @@ void Camera::glPlaceCamera(void) {
 // ====================================================================
 
 void PerspectiveCamera::dollyCamera(float dist) {
-  center += direction*dist;
+  center += direction * dist;
   Vec3f screenCenter = center + direction;
   float screenHeight = tan(angle/2.0);
   lowerLeft = screenCenter - (getScreenUp() * screenHeight) - (getHorizontal() * screenHeight);
@@ -87,7 +92,7 @@ void PerspectiveCamera::dollyCamera(float dist) {
 // ====================================================================
 
 void PerspectiveCamera::truckCamera(float dx, float dy) {
-  center += getHorizontal()*dx + getScreenUp()*dy;
+  center += getHorizontal() * dx + getScreenUp() * dy;
   Vec3f screenCenter = center + direction;
   float screenHeight = tan(angle/2.0);
   lowerLeft = screenCenter - (getScreenUp() * screenHeight) - (getHorizontal() * screenHeight);
@@ -101,9 +106,9 @@ void PerspectiveCamera::rotateCamera(float rx, float ry) {
   // Don't let the model flip upside-down (There is a singularity
   // at the poles when 'up' and 'direction' are aligned)
   float tiltAngle = acos(up.Dot3(direction));
-  if (tiltAngle-ry > 3.13)
+  if (tiltAngle - ry > 3.13)
     ry = tiltAngle - 3.13;
-  else if (tiltAngle-ry < 0.01)
+  else if (tiltAngle - ry < 0.01)
     ry = tiltAngle - 0.01;
 
   Matrix rotMat = Matrix::MakeAxisRotation(up, rx);

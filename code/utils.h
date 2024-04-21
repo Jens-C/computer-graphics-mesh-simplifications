@@ -4,9 +4,9 @@
 
 #define square(x) ((x)*(x))
 
-#define max2(x,y) (((x)>=(y))?(x):(y))
-#define min2(x,y) (((x)>=(y))?(y):(x))
-#define max3(x,y,z) (((x)>=(y)&&(x)>=(z))?(x):(((y)>=(x)&&(y)>=(z))?(y):(z)))
+#define max2(x,y) (((x)>=(y)) ? (x) : (y))
+#define min2(x,y) (((x)>=(y)) ? (y) : (x))
+#define max3(x,y,z) (((x)>=(y) && (x)>=(z))?(x):(((y)>=(x)&&(y)>=(z))?(y):(z)))
 #define min3(x,y,z) (((x)<=(y)&&(x)<=(z))?(x):(((y)<=(x)&&(y)<=(z))?(y):(z)))
 #define max4(x,y,z,w) (max2(max2((x),(y)),max2((z),(w))))
 #define min4(x,y,z,w) (min2(min2((x),(y)),min2((z),(w))))
@@ -54,7 +54,8 @@ static  unsigned int  primes[] = {
   11099833, 
   24099857,
   52099877,  
- 100000000};
+ 100000000
+};
 
 #define MAX_PRIME 100000000
 
@@ -65,7 +66,8 @@ inline int NextLargestPrime(unsigned int x) {
     return x;
   }
   int i = 0;
-  while (x > primes[i]) i++;
+  while (x > primes[i]) 
+    i++;
   return primes[i];
 }
 

@@ -30,25 +30,35 @@ public:
      glMat[4]=data[0][1];  glMat[5]=data[1][1];  glMat[6]=data[2][1];  glMat[7]=data[3][1];
      glMat[8]=data[0][2];  glMat[9]=data[1][2]; glMat[10]=data[2][2]; glMat[11]=data[3][2];
     glMat[12]=data[0][3]; glMat[13]=data[1][3]; glMat[14]=data[2][3]; glMat[15]=data[3][3];
-    return glMat; }
+    return glMat; 
+  }
+
   float Get(int x, int y) const { 
     assert (x >= 0 && x < 4);
     assert (y >= 0 && y < 4);
-    return data[y][x]; }
+    return data[y][x]; 
+  }
   
   // MODIFIERS
   void Set(int x, int y, float v) {
     assert (x >= 0 && x < 4);
     assert (y >= 0 && y < 4);
-    data[y][x] = v; }
+    data[y][x] = v; 
+  }
+
   void SetToIdentity();
   void Clear();
 
   void Transpose(Matrix &m) const;
-  void Transpose() { Transpose(*this); }
+
+  void Transpose() { 
+    Transpose(*this); 
+  }
 
   int Inverse(Matrix &m, float epsilon = 1e-08) const;
-  int Inverse(float epsilon = 1e-08) { return Inverse(*this,epsilon); }
+  int Inverse(float epsilon = 1e-08) { 
+    return Inverse(*this,epsilon); 
+  }
 
   // OVERLOADED OPERATORS
   Matrix& operator=(const Matrix& m);
@@ -76,21 +86,26 @@ public:
   // Use to transform a point with a matrix
   // that may include translation
   void Transform(Vec4f &v) const;
+
   void Transform(Vec3f &v) const {
     Vec4f v2 = Vec4f(v.x(),v.y(),v.z(),1);
     Transform(v2);
-    v.Set(v2.x(),v2.y(),v2.z()); }
+    v.Set(v2.x(),v2.y(),v2.z()); 
+  }
+
   void Transform(Vec2f &v) const {
     Vec4f v2 = Vec4f(v.x(),v.y(),1,1);
     Transform(v2);
-    v.Set(v2.x(),v2.y()); }
+    v.Set(v2.x(),v2.y()); 
+  }
 
   // Use to transform the direction of the ray
   // (ignores any translation)
   void TransformDirection(Vec3f &v) const {
     Vec4f v2 = Vec4f(v.x(),v.y(),v.z(),0);
     Transform(v2);
-    v.Set(v2.x(),v2.y(),v2.z()); }
+    v.Set(v2.x(),v2.y(),v2.z()); 
+  }
 
   // INPUT / OUTPUT
   void Write(FILE *F = stdout) const;

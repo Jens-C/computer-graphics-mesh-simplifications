@@ -31,6 +31,7 @@ public:
     p2 = _p2;
     v = _v;
   }
+
   ~VertexParent();
   
   // to be put in a bag...
@@ -42,7 +43,9 @@ public:
  
   // =========
   // ACCESSORS
-  Vertex* get() const { return v; }
+  Vertex* get() const { 
+    return v; 
+  }
 
 protected:
 

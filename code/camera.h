@@ -10,10 +10,12 @@ class Camera {
 
 public:
   // CONSTRUCTOR & DESTRUCTOR
+  // Gives center, direction and up as arguments
   Camera(Vec3f c, Vec3f d, Vec3f u);
  ~Camera() {}
 
   // GL NAVIGATION
+  // Explenation and implementation of functions is to be found in camera.C
   virtual void glInit(int w, int h) = 0;
   void glPlaceCamera(void);
   virtual void dollyCamera(float dist) = 0;
@@ -27,13 +29,20 @@ protected:
   // HELPER FUNCTIONS
   const Vec3f getHorizontal() const {
     Vec3f answer;
+    // calculate cross product of direction and up and puts the answer in answer => see vectors.h
+    // cross product => a method of multiplying two vectors that produces a vector perpendicular to both vectors involved in the multiplication
+    // This function computes a vector representing the horizontal direction relative to the given direction and up vector.
     Vec3f::Cross3(answer, direction, up);
     answer.Normalize();
-    return answer; }
+    return answer; 
+  }
+
+  // This function computes a vector representing the direction considered as "up" on the screen.
   const Vec3f getScreenUp() const {
     Vec3f answer;
     Vec3f::Cross3(answer, getHorizontal(), direction);
-    return answer; }
+    return answer; 
+  }
 
   // REPRESENTATION
   Vec3f center;
@@ -47,6 +56,7 @@ class PerspectiveCamera : public Camera {
 
 public:
   // CONSTRUCTOR & DESTRUCTOR
+  // this extension of camera also gets an angle as argument
   PerspectiveCamera(Vec3f c, Vec3f d, Vec3f u, float a);
  ~PerspectiveCamera(void) { }
 
@@ -58,6 +68,7 @@ public:
   void Print() {
     printf ("PerspectiveCamera {\n");
     printf ("    center    ");
+    // see vectors.h
     center.Write(stdout);
     printf ("    direction ");
     direction.Write(stdout);

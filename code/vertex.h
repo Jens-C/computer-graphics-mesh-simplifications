@@ -16,24 +16,51 @@ public:
 
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
-  Vertex(int i, const Vec3f &pos) : position(pos), triangleCount(0) { index = i; }
+  // triangleCount is added by us
+  Vertex(int i, const Vec3f &pos) : position(pos), triangleCount(0) { 
+    index = i; 
+  }
+
   virtual ~Vertex() { }
   
   // =========
   // ACCESSORS
-  int getIndex() const { return index; }
-  double x() const { return position.x(); }
-  double y() const { return position.y(); }
-  double z() const { return position.z(); }
-  const Vec3f& get() const { return position; }
-  int getTriangleCount() const { return triangleCount; }
+  int getIndex() const { 
+    return index; 
+  }
+
+  double x() const { 
+    return position.x(); 
+  }
+
+  double y() const { 
+    return position.y(); 
+  }
+
+  double z() const { 
+    return position.z(); 
+  }
+
+  const Vec3f& get() const { 
+    return position; 
+  }
+
+  // added by us
+  int getTriangleCount() const { 
+    return triangleCount; 
+  }
 
   // =========
   // MODIFIERS
-  void set(Vec3f v) { position = v; }
-  void set(double x, double y, double z) { position.Set(x,y,z); }
+  void set(Vec3f v) { 
+    position = v; 
+  }
 
+  void set(double x, double y, double z) { 
+    position.Set(x, y, z); 
+  }
 
+  // added by us
   void incrementTriangleCount() { triangleCount++; }
   void decrementTriangleCount() { triangleCount--; }
 

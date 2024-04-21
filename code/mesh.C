@@ -8,6 +8,7 @@
 #include "triangle.h"
 #include "vertex_parent.h"
 #include "glCanvas.h"
+// We included this
 #include "iostream"
 
 #define INITIAL_VERTEX 10000
@@ -22,8 +23,8 @@
 
 Mesh::Mesh() {
   vertices = new Array<Vertex*>(INITIAL_VERTEX);
-  edges = new Bag<Edge*>(INITIAL_EDGE,Edge::extract_func);
-  triangles = new Bag<Triangle*>(INITIAL_TRIANGLE,Triangle::extract_func);
+  edges = new Bag<Edge*>(INITIAL_EDGE, Edge::extract_func);
+  triangles = new Bag<Triangle*>(INITIAL_TRIANGLE, Triangle::extract_func);
   vertex_parents = new Bag<VertexParent*>(INITIAL_VERTEX, VertexParent::extract_func);
   bbox = NULL;
 }
@@ -48,7 +49,7 @@ Vertex* Mesh::addVertex(const Vec3f &position) {
   Vertex *v = new Vertex(index, position);
   vertices->Add(v);
   if (bbox == NULL) 
-    bbox = new BoundingBox(position,position);
+    bbox = new BoundingBox(position, position);
   else 
     bbox->Extend(position);
   return v;
@@ -60,9 +61,9 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   Triangle *t = new Triangle();
 
   // create the edges
-  Edge *ea = new Edge(a,t);
-  Edge *eb = new Edge(b,t);
-  Edge *ec = new Edge(c,t);
+  Edge *ea = new Edge(a, t);
+  Edge *eb = new Edge(b, t);
+  Edge *ec = new Edge(c, t);
 
   // point the triangle to one of its edges
   t->setEdge(ea);
@@ -78,9 +79,12 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   edges->Add(ec);
 
   // connect up with opposite edges (if they exist)
-  Edge *ea_op = getEdge((*ea)[1],(*ea)[0]);
-  Edge *eb_op = getEdge((*eb)[1],(*eb)[0]);
-  Edge *ec_op = getEdge((*ec)[1],(*ec)[0]);  
+  // getEdge returns the edge that exists between two points, these two points are accessed by [0] and [1]
+  Edge *ea_op = getEdge((*ea)[1], (*ea)[0]);
+  Edge *eb_op = getEdge((*eb)[1], (*eb)[0]);
+  Edge *ec_op = getEdge((*ec)[1], (*ec)[0]);  
+
+  // The opposite edge is actually the same as the one that exists, but is points in the different direction
   if (ea_op != NULL) { ea_op->setOpposite(ea); }
   if (eb_op != NULL) { eb_op->setOpposite(eb); }
   if (ec_op != NULL) { ec_op->setOpposite(ec); }
@@ -111,12 +115,14 @@ void Mesh::removeTriangle(Triangle *t) {
 
 Edge* Mesh::getEdge(Vertex *a, Vertex *b) const {
   assert (edges != NULL);
-  return edges->Get(a->getIndex(),b->getIndex());
+  return edges->Get(a->getIndex(), b->getIndex());
 }
 
+// return the vertices in order => from small to big
 Vertex* Mesh::getChildVertex(Vertex *p1, Vertex *p2) const {
   VertexParent *vp = vertex_parents->GetReorder(p1->getIndex(), p2->getIndex());
-  if (vp == NULL) return NULL;
+  if (vp == NULL) 
+    return NULL;
   return vp->get();
 }
 
@@ -132,7 +138,8 @@ void Mesh::setParentsChild(Vertex *p1, Vertex *p2, Vertex *child) {
 
 void Mesh::Load(const char *input_file) {
   
-  FILE *objfile = fopen(input_file,"r");
+  // Open a text file for reading. The file must exist.
+  FILE *objfile = fopen(input_file, "r");
   if (objfile == NULL) {
     printf ("ERROR! CANNOT OPEN '%s'\n",input_file);
     return;
@@ -152,65 +159,86 @@ void Mesh::Load(const char *input_file) {
   int vert_count = 0;
   int vert_index = 1;
   
+  // The fgets() function reads characters from the current stream position up to and including the first new-line character (\n), up to the end of the stream, or until the number of characters read is equal to n-1, whichever comes first. The fgets() function stores the result in string and adds a null character (\0) to the end of the string. The string includes the new-line character, if read. If n is equal to 1, the string is empty.
   while (fgets(line, 200, objfile)) {   
     
+    // Checks if the second-to-last character of the line array is a backslash
     if (line[strlen(line)-2] == '\\') {
+      // Reads the next line from the file objfile and stores it in the token array, with a maximum length of 100 characters
       fgets(token, 100, objfile);	
-      int tmp = strlen(line)-2;
-      strncpy(&line[tmp],token,100);
+      // Calculates the index of the character just before the backslash in the line array.
+      int tmp = strlen(line) - 2;
+      // Copies the contents of the token array into the line array, starting from the index tmp. This effectively concatenates the continuation line to the end of the original line.
+      strncpy(&line[tmp], token, 100);
     }
+
+    // reads formatted input from a string (line in this case) and stores it into corresponding variables. If successful, it will be 1; otherwise, it will be -1
     int token_count = sscanf (line, "%s\n",token);
-    if (token_count == -1) continue;
+    if (token_count == -1) 
+      continue;
     a = b = c = d = e = -1;
-    if (!strcmp(token,"usemtl") ||
-	!strcmp(token,"g")) {
+
+    if (!strcmp(token, "usemtl") || !strcmp(token, "g")) {
       vert_index = 1; //vert_count + 1;
       index++;
-    } else if (!strcmp(token,"v")) {
+    } else if (!strcmp(token, "v")) {
       vert_count++;
-      sscanf (line, "%s %f %f %f\n",token,&x,&y,&z);
+      sscanf (line, "%s %f %f %f\n", token, &x, &y, &z);
       addVertex(Vec3f(x,y,z));
     } else if (!strcmp(token,"f")) {
       int num = sscanf (line, "%s %s %s %s %s %s\n",token,
 			atoken,btoken,ctoken,dtoken,etoken);
-      sscanf (atoken,"%d",&a);
-      sscanf (btoken,"%d",&b);
-      sscanf (ctoken,"%d",&c);
-      if (num > 4) sscanf (dtoken,"%d",&d);
-      if (num > 5) sscanf (etoken,"%d",&e);
+      sscanf (atoken, "%d", &a);
+      sscanf (btoken, "%d", &b);
+      sscanf (ctoken, "%d", &c);
+      if (num > 4) 
+        sscanf (dtoken, "%d", &d);
+      if (num > 5) 
+        sscanf (etoken, "%d", &e);
       a -= vert_index;
       b -= vert_index;
       c -= vert_index;
-      if (d >= 0) d -= vert_index;
-      if (e >= 0) e -= vert_index;
+      if (d >= 0) 
+        d -= vert_index;
+      if (e >= 0) 
+        e -= vert_index;
       assert (a >= 0 && a < numVertices());
       assert (b >= 0 && b < numVertices());
       assert (c >= 0 && c < numVertices());
 
-      addTriangle(getVertex(a),getVertex(b),getVertex(c));
+      addTriangle(getVertex(a), getVertex(b), getVertex(c));
+
+      // We added this
       getVertex(a)->incrementTriangleCount();
+      // We addes this
       getVertex(b)->incrementTriangleCount();
+      // We added this
       getVertex(c)->incrementTriangleCount();
+
       if (d > -1) { 
-        assert (d < numVertices()); addTriangle(getVertex(a),getVertex(c),getVertex(d));
+        assert (d < numVertices()); 
+        addTriangle(getVertex(a), getVertex(c), getVertex(d));
+        // We added this
         getVertex(d)->incrementTriangleCount();
-        }
+      }
       if (e > -1) { 
         assert (e < numVertices()); 
-        addTriangle(getVertex(a),getVertex(d),getVertex(e));
+        addTriangle(getVertex(a), getVertex(d), getVertex(e));
+        // We added this
         getVertex(e)->incrementTriangleCount();
-        }
+      }
     } else if (!strcmp(token,"e")) {
-      int num = sscanf (line, "%s %s %s %s\n",token,atoken,btoken,ctoken);
+      int num = sscanf (line, "%s %s %s %s\n", token, atoken, btoken, ctoken);
       assert (num == 4);
-      sscanf (atoken,"%d",&a);
-      sscanf (btoken,"%d",&b);
-      if (!strcmp(ctoken,"inf")) x = 1000000; // this is close to infinity...
-      else sscanf (ctoken,"%f",&x);
+      sscanf (atoken, "%d", &a);
+      sscanf (btoken, "%d", &b);
+      if (!strcmp(ctoken,"inf")) 
+        x = 1000000; // this is close to infinity...
+      else sscanf (ctoken, "%f", &x);
       Vertex *va = getVertex(a);
       Vertex *vb = getVertex(b);
-      Edge *ab = getEdge(va,vb);
-      Edge *ba = getEdge(vb,va);
+      Edge *ab = getEdge(va, vb);
+      Edge *ba = getEdge(vb, va);
       assert (ab != NULL);
       assert (ba != NULL);
       ab->setCrease(x);
@@ -249,13 +277,13 @@ void Mesh::Paint(ArgParser *args) {
   // scale it so it fits in the window
   Vec3f center; bbox->getCenter(center);
   float s = 1/bbox->maxDim();
-  glScalef(s,s,s);
-  glTranslatef(-center.x(),-center.y(),-center.z());
+  glScalef(s, s, s);
+  glTranslatef(-center.x(), -center.y(), -center.z());
 
   // this offset prevents "z-fighting" bewteen the edges and faces
   // the edges will always win.
   glEnable(GL_POLYGON_OFFSET_FILL);
-  glPolygonOffset(1.1,4.0);
+  glPolygonOffset(1.1, 4.0);
 
   // draw the triangles
   glColor3f(1,1,1);
@@ -265,10 +293,10 @@ void Mesh::Paint(ArgParser *args) {
     Vec3f a = (*t)[0]->get();
     Vec3f b = (*t)[1]->get();
     Vec3f c = (*t)[2]->get();
-    InsertNormal(a,b,c); 
-    glVertex3f(a.x(),a.y(),a.z());
-    glVertex3f(b.x(),b.y(),b.z());
-    glVertex3f(c.x(),c.y(),c.z());
+    InsertNormal(a, b, c); 
+    glVertex3f(a.x(), a.y(), a.z());
+    glVertex3f(b.x(), b.y(), b.z());
+    glVertex3f(c.x(), c.y(), c.z());
   }
   triangles->EndIteration(iter);
   glEnd();
@@ -280,37 +308,37 @@ void Mesh::Paint(ArgParser *args) {
 
     // draw all the interior, non-crease edges
     glLineWidth(1);
-    glColor3f(0,0,0);
+    glColor3f(0, 0, 0);
     glBegin (GL_LINES);
     Iterator<Edge*> *iter = edges->StartIteration();
     while (Edge *e = iter->GetNext()) {
       if (e->getOpposite() == NULL || e->getCrease() > 0) continue;
       Vec3f a = (*e)[0]->get();
       Vec3f b = (*e)[1]->get();
-      glVertex3f(a.x(),a.y(),a.z());
-      glVertex3f(b.x(),b.y(),b.z());
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
     }
     edges->EndIteration(iter);
     glEnd();
 
     // draw all the interior, crease edges
     glLineWidth(3);
-    glColor3f(1,1,0);
+    glColor3f(1, 1, 0);
     glBegin (GL_LINES);
     iter = edges->StartIteration();
     while (Edge *e = iter->GetNext()) {
       if (e->getOpposite() == NULL || e->getCrease() == 0) continue;
       Vec3f a = (*e)[0]->get();
       Vec3f b = (*e)[1]->get();
-      glVertex3f(a.x(),a.y(),a.z());
-      glVertex3f(b.x(),b.y(),b.z());
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
     }
     edges->EndIteration(iter);
     glEnd();
 
     // draw all the boundary edges
     glLineWidth(3);
-    glColor3f(1,0,0);
+    glColor3f(1, 0, 0);
     glBegin (GL_LINES);
     iter = edges->StartIteration();
     while (Edge *e = iter->GetNext()) {
@@ -318,8 +346,8 @@ void Mesh::Paint(ArgParser *args) {
       assert (e->getCrease() == 0);
       Vec3f a = (*e)[0]->get();
       Vec3f b = (*e)[1]->get();
-      glVertex3f(a.x(),a.y(),a.z());
-      glVertex3f(b.x(),b.y(),b.z());
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
     }
     edges->EndIteration(iter);
     glEnd();
@@ -345,6 +373,7 @@ void Mesh::LoopSubdivision() {
 void Mesh::Simplification(int target_tri_count) {
     printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
 
+    // We added everything from here in this function
     // Perform simplification until the target number of triangles is reached
     while (numTriangles() > target_tri_count) {
         // Select an edge to collapse based on some simplification criteria
@@ -356,6 +385,7 @@ void Mesh::Simplification(int target_tri_count) {
     }
 }
 
+// We added this function
 void Mesh::collapseEdge(Edge* edge) {
 if (edge == NULL) return;
 
@@ -407,7 +437,7 @@ if (edge == NULL) return;
 
 }
 
-
+// We added this function
 Edge* Mesh::selectEdgeToCollapse() {
     // for now a random edge is selected
     Edge* edg = edges->ChooseRandom();

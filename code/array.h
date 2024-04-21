@@ -16,28 +16,38 @@ public:
     assert (s > 0);
     size = s;
     count = 0;
-    data = new ARRAY_ELEMENT [size]; }
+    // creates array of type given, ARRAY_ELEMENT is a placeholder
+    data = new ARRAY_ELEMENT [size]; 
+  }
+
   virtual ~Array() { 
     delete [] data; 
-    data = NULL; }
+    data = NULL; 
+  }
 
   // =========
   // ACCESSORS
-  int Count() const { return count; }  
+  int Count() const { 
+    return count; 
+  }  
+
+  // This code snippet defines the operator[] function for accessing elements in an array-like data structure
+  // const indicates that it does nog modify the object it's called on
   ARRAY_ELEMENT operator [] (int i) const {
     assert (i >= 0 && i < count);
-    return data[i]; }
+    return data[i]; 
+  }
   
   // =========
   // MODIFIERS
   void Add(const ARRAY_ELEMENT elem) {
     if (count == size) {
       // double the space & copy 
-      int new_size = size*2;
-      //printf ("need to resize array from %d to %d\n", size, new_size);
+      int new_size = size * 2;
+      // printf ("need to resize array from %d to %d\n", size, new_size);
       ARRAY_ELEMENT * new_data = new ARRAY_ELEMENT [new_size];
       for (int i = 0; i < size; i++) {
-	new_data[i] = data[i];
+	      new_data[i] = data[i];
       }
       delete [] data;
       data = new_data;
@@ -48,8 +58,12 @@ public:
     count++;
   }
 
-  void AddNoDuplicates(const ARRAY_ELEMENT e) { if (!Member(e)) Add(e); }
+  void AddNoDuplicates(const ARRAY_ELEMENT e) { 
+    if (!Member(e)) 
+      Add(e); 
+  }
 
+  // replaces the element at position i with elem and returns the previuos value
   ARRAY_ELEMENT Replace(int i, const ARRAY_ELEMENT elem) {
     assert(i >= 0 && i < count);
     ARRAY_ELEMENT answer = data[i];
@@ -61,11 +75,12 @@ public:
     int x = -1;
     for (int i = 0; i < count; i++) {
       if (data[i] == elem) {
-	x = i;
-	break;
+        x = i;
+        break;
       }
     }
     assert (x >= 0);
+    // There is no order, so it sets the last element at the place to be removed and decrements the number of elements in the array
     data[x] = data[count-1];
     count--;    
   }
@@ -74,11 +89,12 @@ public:
     int x = -1;
     for (int i = 0; i < count; i++) {
       if (data[i] == elem) {
-	x = i;
-	break;
+        x = i;
+        break;
       }
     }
-    if (x >= 0) return 1;
+    if (x >= 0) 
+      return 1;
     return 0;
   }
 
@@ -97,8 +113,11 @@ private:
 
   // ==============
   // REPRESENTATION
+  // number of elements in the array
   int count;
+  // size of the array
   int size;
+  // array with data
   ARRAY_ELEMENT * data;
 
 };
