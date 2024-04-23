@@ -30,7 +30,6 @@ template <class BAG_ELEMENT>
 class Bag {
 
 public:
- 
   // ========================
   // CONSTRUCTOR & DESTRUCTOR
   // takes an initial size and function pointer as argument

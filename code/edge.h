@@ -29,6 +29,10 @@ public:
     assert (vertex != NULL); 
     return vertex; 
   }
+  void setVertex(Vertex* v) {
+    assert(v != nullptr);
+    vertex = v;
+  }
 
   Edge* getNext() const { 
     assert (next != NULL); 

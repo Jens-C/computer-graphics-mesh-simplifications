@@ -94,19 +94,26 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
 }
 
 void Mesh::removeTriangle(Triangle *t) {
-
+  printf("removing triangle\n");
   Edge *ea = t->getEdge();
   Edge *eb = ea->getNext();
   Edge *ec = eb->getNext();
   assert (ec->getNext() == ea);
 
   // remove elements from master lists
-  edges->Remove(ea);
-  edges->Remove(eb);
-  edges->Remove(ec);
-  triangles->Remove(t);
+  if (edges->Member(ea))
+    edges->Remove(ea);
+  if (edges->Member(eb))
+    edges->Remove(eb);
+  if (edges->Member(ec))
+    edges->Remove(ec);
 
-  // clean up memory
+  printf("edges removed\n");
+  
+  // Check if the triangle is already removed before attempting to remove it
+  if (triangles->Member(t))
+    triangles->Remove(t);
+
   delete ea;
   delete eb;
   delete ec;
@@ -385,9 +392,18 @@ void Mesh::Simplification(int target_tri_count) {
     }
 }
 
+
+
 // We added this function
 void Mesh::collapseEdge(Edge* edge) {
 if (edge == NULL) return;
+
+
+    // check if collaps doesnt intersect mesh
+
+    
+
+
 
     // Get vertices and triangles involved in the edge collapse
     Vertex* v1 = (*edge)[0];
@@ -401,9 +417,9 @@ if (edge == NULL) return;
     std::cout<<(*t2)[0]->get()<<(*t2)[1]->get()<<(*t2)[2]->get()<<std::endl;
     // Update remaining vertex position (e.g., average position)
     Vec3f newPos = (v1->get() + v2->get()) * 0.5;
-    v1->set(newPos);
     v2->set(newPos);
-    
+// Start the iteration
+
   // Get the next and previous half-edges of the edge
     Edge* nextEdge = edge->getNext()->getOpposite();
     Edge* prevEdge = edge->getNext()->getNext()->getOpposite();
@@ -425,14 +441,28 @@ if (edge == NULL) return;
 
     
 
-    //TODOthere are edges that are boundary edges because of the triangle deletion
+    
     
     // Remove the edge and triangles from the mesh
     removeTriangle(t1);
     removeTriangle(t2);
-    printf("t1 is removed");
+    printf("t1 is removed\n");
 
-    edges->Print();
+      Iterator<Edge*>* iter = edges->StartIteration();
+
+  // Loop through the elements and chande verteces referencing v1 to v2
+  while (Edge* e = iter->GetNext()) {
+      if (e != nullptr) {
+          // Check if the current edge has v1 as its vertex
+          if (e->getVertex() == v1) {
+              // Update the vertex reference to v2
+              e->setVertex(v2);
+          }
+      } 
+  }
+  edges->EndIteration(iter);
+  vertices->Remove(v1);
+    printf("v1 removed\n");
     
 
 }
