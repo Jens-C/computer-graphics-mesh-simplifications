@@ -29,6 +29,7 @@ public:
     assert (vertex != NULL); 
     return vertex; 
   }
+  //function written by us to remove vertex and add new one.
   void setVertex(Vertex* v) {
     assert(v != nullptr);
     vertex = v;
@@ -80,7 +81,7 @@ public:
   }
 
   void setNext(Edge *e) {
-    assert (next == NULL);
+    //assert (next == NULL);
     assert (e != NULL);
     assert (triangle == e->triangle);
     next = e;

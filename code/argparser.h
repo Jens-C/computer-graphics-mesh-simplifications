@@ -43,8 +43,8 @@ public:
 
   void DefaultValues() {
     input_file = NULL;
-    width = 100;
-    height = 100;
+    width = 600;
+    height = 600;
     wireframe = 0;
   }
 

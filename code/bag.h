@@ -226,7 +226,7 @@ public:
   
   void Print() {
     printf ("BAG::PRINT %d %d %d\n", size, count, del_count);
-    /*int c=0;
+    int c=0;
     for (int i = 0; i < size; i++) {      
       printf ("%3d\n: ",i);
       if (marks[i] == BAG_MARK_PRESENT) {
@@ -240,7 +240,7 @@ public:
       }
     }
     assert(c==count);
-   */ 
+   
   }
 
   private: void Resize(int s) {

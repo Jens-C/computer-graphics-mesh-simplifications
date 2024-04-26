@@ -439,10 +439,6 @@ if (edge == NULL) return;
     oppositePrev->clearOpposite();
     oppositeNext->setOpposite(oppositePrev);
 
-    
-
-    
-    
     // Remove the edge and triangles from the mesh
     removeTriangle(t1);
     removeTriangle(t2);
@@ -455,13 +451,33 @@ if (edge == NULL) return;
       if (e != nullptr) {
           // Check if the current edge has v1 as its vertex
           if (e->getVertex() == v1) {
+
+              // remove triangle and remove edge and create new ones
+              // still problem with next edge assignment where the edges are not in same triangle
+              Triangle* t3 = e->getTriangle();
+              triangles->Remove(t3);
+              edges->Remove(e);
+              Triangle* temp = new Triangle();
+              Edge* tempEdge = new Edge(v2,temp);
+              
+              tempEdge->setNext(e->getNext());
+              e->getNext()->getNext()->setNext(tempEdge);
+              tempEdge->setCrease(e->getCrease());
+              Edge* tempOposite = e->getOpposite();
+              tempOposite->clearOpposite();
+              tempEdge->setOpposite(tempOposite);
+              edges->Add(tempEdge);
+              
+              temp->setEdge(tempEdge);
+              triangles->Add(temp);
               // Update the vertex reference to v2
-              e->setVertex(v2);
+              
           }
       } 
   }
   edges->EndIteration(iter);
   vertices->Remove(v1);
+  delete v1;
     printf("v1 removed\n");
     
 
