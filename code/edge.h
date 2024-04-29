@@ -34,6 +34,7 @@ public:
     assert(v != nullptr);
     vertex = v;
   }
+  void Print();
 
   Edge* getNext() const { 
     assert (next != NULL); 

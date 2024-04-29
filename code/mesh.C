@@ -55,7 +55,7 @@ Vertex* Mesh::addVertex(const Vec3f &position) {
   return v;
 }
 
-void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
+Triangle* Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
 
   // create the triangle
   Triangle *t = new Triangle();
@@ -85,12 +85,14 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   Edge *ec_op = getEdge((*ec)[1], (*ec)[0]);  
 
   // The opposite edge is actually the same as the one that exists, but is points in the different direction
-  if (ea_op != NULL) { ea_op->setOpposite(ea); }
-  if (eb_op != NULL) { eb_op->setOpposite(eb); }
-  if (ec_op != NULL) { ec_op->setOpposite(ec); }
+  if (ea_op != NULL) { ea_op->setOpposite(ea) ;}else{printf("null\n");}
+  if (eb_op != NULL) { eb_op->setOpposite(eb); }else{printf("null2\n");}
+  if (ec_op != NULL) { ec_op->setOpposite(ec); }else{printf("null3\n");}
 
   // add the triangle to the master list
-  triangles->Add(t); 
+  triangles->Add(t);
+  return t;
+  //printf("%d\n", ea_op->getOpposite()->getVertex()->getIndex());
 }
 
 void Mesh::removeTriangle(Triangle *t) {
@@ -99,7 +101,10 @@ void Mesh::removeTriangle(Triangle *t) {
   Edge *eb = ea->getNext();
   Edge *ec = eb->getNext();
   assert (ec->getNext() == ea);
-
+  //delete oposites (added this)
+  //ea->clearOpposite();
+  //eb->clearOpposite();
+  //ec->clearOpposite();
   // remove elements from master lists
   if (edges->Member(ea))
     edges->Remove(ea);
@@ -125,13 +130,14 @@ Edge* Mesh::getEdge(Vertex *a, Vertex *b) const {
   return edges->Get(a->getIndex(), b->getIndex());
 }
 
+
 // return the vertices in order => from small to big
 Vertex* Mesh::getChildVertex(Vertex *p1, Vertex *p2) const {
   VertexParent *vp = vertex_parents->GetReorder(p1->getIndex(), p2->getIndex());
   if (vp == NULL) 
     return NULL;
   return vp->get();
-}
+}       
 
 void Mesh::setParentsChild(Vertex *p1, Vertex *p2, Vertex *child) {
   vertex_parents->Add(new VertexParent(p1,p2,child));
@@ -402,7 +408,7 @@ if (edge == NULL) return;
     // check if collaps doesnt intersect mesh
 
     
-
+edges->Print();
 
 
     // Get vertices and triangles involved in the edge collapse
@@ -412,20 +418,19 @@ if (edge == NULL) return;
     Triangle* t1 = edge->getTriangle();
     Triangle* t2 = edge->getOpposite()->getTriangle();
     //Triangle* t2 = edge->getOpposite() != NULL ? edge->getOpposite()->getTriangle() : NULL;
-    printf("Collapse triangles: %d %d\n", t1->getEdge()->getVertex()->getIndex(), t2->getEdge()->getVertex()->getIndex());
-    std::cout<<(*t1)[0]->get()<<(*t1)[1]->get()<<(*t1)[2]->get()<<std::endl;
-    std::cout<<(*t2)[0]->get()<<(*t2)[1]->get()<<(*t2)[2]->get()<<std::endl;
-    // Update remaining vertex position (e.g., average position)
+
+    //calc and create new vertex
     Vec3f newPos = (v1->get() + v2->get()) * 0.5;
-    v2->set(newPos);
+    Vertex* newV = addVertex(newPos);
 // Start the iteration
 
-  // Get the next and previous half-edges of the edge
+  // Get the next and previous half-edges of the edge and stitch togheter there adjacency
+  //removed for now for debugging
     Edge* nextEdge = edge->getNext()->getOpposite();
     Edge* prevEdge = edge->getNext()->getNext()->getOpposite();
 
   
-    nextEdge->clearOpposite();
+   /* nextEdge->clearOpposite();
     prevEdge->clearOpposite();
     nextEdge->setOpposite(prevEdge);
    
@@ -437,50 +442,97 @@ if (edge == NULL) return;
     Edge* oppositePrev = oppositeEdge->getNext()->getNext()->getOpposite();
     oppositeNext->clearOpposite();
     oppositePrev->clearOpposite();
-    oppositeNext->setOpposite(oppositePrev);
+    oppositeNext->setOpposite(oppositePrev);*/
 
     // Remove the edge and triangles from the mesh
     removeTriangle(t1);
     removeTriangle(t2);
-    printf("t1 is removed\n");
 
-      Iterator<Edge*>* iter = edges->StartIteration();
 
-  // Loop through the elements and chande verteces referencing v1 to v2
+
+    //arrays to store vertices of the temp deleted triangles
+    Array<Vertex*> *va1 = new Array<Vertex*>(INITIAL_VERTEX);
+    Array<Vertex*> *va2 = new Array<Vertex*>(INITIAL_VERTEX);
+    Array<Vertex*> *va3 = new Array<Vertex*>(INITIAL_VERTEX);
+    int count = 0;
+    Iterator<Edge*>* iter = edges->StartIteration();
+
+  // Loop through the elements and delete all triangles containing v1 or v2
   while (Edge* e = iter->GetNext()) {
       if (e != nullptr) {
           // Check if the current edge has v1 as its vertex
-          if (e->getVertex() == v1) {
-
+          if (e->getVertex() == v1 ||e->getVertex() == v2) {
+              
               // remove triangle and remove edge and create new ones
-              // still problem with next edge assignment where the edges are not in same triangle
               Triangle* t3 = e->getTriangle();
-              triangles->Remove(t3);
-              edges->Remove(e);
-              Triangle* temp = new Triangle();
-              Edge* tempEdge = new Edge(v2,temp);
+              //delete oposites of triangle
+
+              e->clearOpposite();
+              e->getNext()->clearOpposite();
+              e->getNext()->getNext()->clearOpposite();
+
+              //two other vertices of the trianlge
+              Vertex* a = e->getNext()->getVertex();
+              Vertex* b = e->getNext()->getNext()->getVertex();
+              removeTriangle(t3);
+              //add vertices to triangle
+              va1->Add(newV);
+              va2->Add(a);
+              va3->Add(b);
+              count++;
+              printf("%d\n", count);
+
               
-              tempEdge->setNext(e->getNext());
-              e->getNext()->getNext()->setNext(tempEdge);
-              tempEdge->setCrease(e->getCrease());
-              Edge* tempOposite = e->getOpposite();
-              tempOposite->clearOpposite();
-              tempEdge->setOpposite(tempOposite);
-              edges->Add(tempEdge);
-              
-              temp->setEdge(tempEdge);
-              triangles->Add(temp);
               // Update the vertex reference to v2
               
           }
       } 
   }
   edges->EndIteration(iter);
+
+  printf("triangles removed\n");
+  //add the deleted triangles with the one vertex changed
+  for(int i = 0; i<count;i++){
+    printf("1\n");
+    Triangle* newT = addTriangle((*va1)[i],(*va2)[i],(*va3)[i]);
+              Edge* ab_op = newT->getEdge();
+              Edge* bc_op = newT->getEdge()->getNext();
+              Edge* ac_op = newT->getEdge()->getNext()->getNext();
+              //printf("%d\n",newT->getEdge()->getOpposite()->getVertex()->getIndex());
+              //setoposites
+              
+              //code to print new triangle and their adjacency
+              printf("v2 index%d\n",v2->getIndex());
+              printf("v1 index%d\n",v1->getIndex());
+                if (ab_op->getOpposite() == NULL) {
+                  printf("%d, %d\n",(*ab_op)[0]->getIndex(), (*ab_op)[1]->getIndex()) ;
+                  Vertex* temp = (*ab_op)[0];
+                  if((*ab_op)[0]==v2){
+                    temp = (*ab_op)[1];
+                  }
+
+                  Edge* op = getEdge((*ab_op)[0],(*ab_op)[1]);
+                  printf("rand%d, %d\n",(*op)[0]->getIndex(), (*op)[1]->getIndex()) ;
+
+                  }else{printf("op1\n");printf("%d, %d\n",(*ab_op)[0]->getIndex(), (*ab_op)[1]->getIndex()) ;}
+
+                if (bc_op->getOpposite() == NULL) { 
+                  printf("%d, %d\n",(*bc_op)[0]->getIndex(),(*bc_op)[1]->getIndex()) ;
+
+                }else{printf("op2\n");printf("%d, %d\n",(*bc_op)[0]->getIndex(),(*bc_op)[1]->getIndex()) ;}
+
+                if (ac_op->getOpposite() == NULL) {  
+                  printf("%d, %d\n",(*ac_op)[0]->getIndex(), (*ac_op)[1]->getIndex());
+
+                }else{printf("op3\n");printf("%d, %d\n",(*ac_op)[0]->getIndex(), (*ac_op)[1]->getIndex());}
+              //newT->getEdge()->setOpposite(ab_op);
+              //newT->getEdge()->getNext()->setOpposite(ab_op);
+              //newT->getEdge()->getNext()->getNext()->setOpposite(ab_op)
+  }
   vertices->Remove(v1);
   delete v1;
     printf("v1 removed\n");
-    
-
+  
 }
 
 // We added this function

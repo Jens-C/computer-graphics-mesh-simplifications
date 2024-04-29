@@ -228,12 +228,12 @@ public:
     printf ("BAG::PRINT %d %d %d\n", size, count, del_count);
     int c=0;
     for (int i = 0; i < size; i++) {      
-      printf ("%3d\n: ",i);
+      //printf ("%3d\n: ",i);
       if (marks[i] == BAG_MARK_PRESENT) {
-	    //data[i]->Print();
+	    data[i]->Print();
 	c++;
       } else if (marks[i] == BAG_MARK_DELETE) {
-	printf ("XXXXXXXXXX\n");
+	//printf ("XXXXXXXXXX\n");
       } else {
 	assert (marks[i] == BAG_MARK_NULL);
 	//printf ("NULL\n");

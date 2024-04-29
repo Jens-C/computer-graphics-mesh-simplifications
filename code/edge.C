@@ -17,6 +17,10 @@ Edge::~Edge() {
     opposite->opposite = NULL;
 }
 
+void Edge::Print(){
+  printf("%d,%d\n", getNext()->getVertex()->getIndex() ,getNext()->getNext()->getVertex()->getIndex());
+}
+
 void Edge::extract_func(Edge *e, int &a, int &b, int &c) {
   a = e->getVertex()->getIndex(); 
   b = e->getNext()->getNext()->getVertex()->getIndex();
