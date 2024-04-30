@@ -406,9 +406,9 @@ void Mesh::collapseEdge(Edge* edge) {
   Vertex* v2 = (*edge)[1];
 
   // Just info, can be deleted later
-  printf("v1 = (%.3f, %.3f, %.3f)\n", v1->x(), v1->y(), v1->z());
-  printf("v2 = (%.3f, %.3f, %.3f)\n", v2->x(), v2->y(), v2->z());
-  printf("v from edge = (%.3f, %.3f, %.3f)\n", edge->getVertex()->x(), edge->getVertex()->y(), edge->getVertex()->z());
+  // printf("v1 = (%.3f, %.3f, %.3f)\n", v1->x(), v1->y(), v1->z());
+  // printf("v2 = (%.3f, %.3f, %.3f)\n", v2->x(), v2->y(), v2->z());
+  // printf("v from edge = (%.3f, %.3f, %.3f)\n", edge->getVertex()->x(), edge->getVertex()->y(), edge->getVertex()->z());
 
   //get the triangles that are connected to the edge
   Triangle* t1 = edge->getTriangle();
@@ -428,14 +428,20 @@ void Mesh::collapseEdge(Edge* edge) {
   int end = 0;
   Edge* current = edge->getNext()->getOpposite();
   removeTriangle(t1);
+
   while(end == 0) {
+    if (current->getNext()->getOpposite()->getTriangle() == t2) {
+      printf("Last triangle to change \n");
+      end = 1;
+      removeTriangle(t2);
+    }
     Edge* temp_next = current->getNext()->getOpposite();
     Vertex* a = current->getVertex(); // this is v1 !!
-    printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
     Vertex* b = current->getNext()->getVertex();
-    printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
     Vertex* c = current->getNext()->getNext()->getVertex();
-    printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
+    // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
+    // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
+    // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
     Triangle* temp = current->getTriangle();
     removeTriangle(temp);
     printf("Triangle removed !!\n");
@@ -443,22 +449,6 @@ void Mesh::collapseEdge(Edge* edge) {
     printf("Triangle added !!\n");
     
     current = temp_next;
-    if (current->getNext()->getOpposite()->getTriangle() == t2) {
-      printf("Last triangle to change \n");
-      end = 1;
-      Vertex* a = current->getVertex(); // this is v1 !!
-      printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
-      Vertex* b = current->getNext()->getVertex();
-      printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
-      Vertex* c = current->getNext()->getNext()->getVertex();
-      printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
-      removeTriangle(t2);
-      Triangle* temp = current->getTriangle();
-      removeTriangle(temp);
-      printf("Last triangle removed !!\n");
-      addTriangle(v2, c, b);
-      printf("Last triangle added !!\n");
-    }
   };
 
   printf("Ready with changing triangles\n");

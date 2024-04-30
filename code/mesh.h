@@ -63,7 +63,7 @@ public:
     return triangles->Count(); 
   }
 
-  Triangle* addTriangle(Vertex *a, Vertex *b, Vertex *c);
+  void addTriangle(Vertex *a, Vertex *b, Vertex *c);
   void removeTriangle(Triangle *t);
 
   // ===============
