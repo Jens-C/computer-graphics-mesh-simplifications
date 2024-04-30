@@ -55,7 +55,7 @@ Vertex* Mesh::addVertex(const Vec3f &position) {
   return v;
 }
 
-Triangle* Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
+void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
 
   // create the triangle
   Triangle *t = new Triangle();
@@ -85,14 +85,12 @@ Triangle* Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   Edge *ec_op = getEdge((*ec)[1], (*ec)[0]);  
 
   // The opposite edge is actually the same as the one that exists, but is points in the different direction
-  if (ea_op != NULL) { ea_op->setOpposite(ea) ;}else{printf("null\n");}
-  if (eb_op != NULL) { eb_op->setOpposite(eb); }else{printf("null2\n");}
-  if (ec_op != NULL) { ec_op->setOpposite(ec); }else{printf("null3\n");}
+  if (ea_op != NULL) { ea_op->setOpposite(ea); }
+  if (eb_op != NULL) { eb_op->setOpposite(eb); }
+  if (ec_op != NULL) { ec_op->setOpposite(ec); }
 
   // add the triangle to the master list
-  triangles->Add(t);
-  return t;
-  //printf("%d\n", ea_op->getOpposite()->getVertex()->getIndex());
+  triangles->Add(t); 
 }
 
 void Mesh::removeTriangle(Triangle *t) {
@@ -101,11 +99,9 @@ void Mesh::removeTriangle(Triangle *t) {
   Edge *eb = ea->getNext();
   Edge *ec = eb->getNext();
   assert (ec->getNext() == ea);
-  //delete oposites (added this)
-  //ea->clearOpposite();
-  //eb->clearOpposite();
-  //ec->clearOpposite();
+
   // remove elements from master lists
+  // We added the if statements
   if (edges->Member(ea))
     edges->Remove(ea);
   if (edges->Member(eb))
@@ -116,6 +112,7 @@ void Mesh::removeTriangle(Triangle *t) {
   printf("edges removed\n");
   
   // Check if the triangle is already removed before attempting to remove it
+  // We added the if statements
   if (triangles->Member(t))
     triangles->Remove(t);
 
@@ -130,14 +127,13 @@ Edge* Mesh::getEdge(Vertex *a, Vertex *b) const {
   return edges->Get(a->getIndex(), b->getIndex());
 }
 
-
 // return the vertices in order => from small to big
 Vertex* Mesh::getChildVertex(Vertex *p1, Vertex *p2) const {
   VertexParent *vp = vertex_parents->GetReorder(p1->getIndex(), p2->getIndex());
   if (vp == NULL) 
     return NULL;
   return vp->get();
-}       
+}
 
 void Mesh::setParentsChild(Vertex *p1, Vertex *p2, Vertex *child) {
   vertex_parents->Add(new VertexParent(p1,p2,child));
@@ -221,24 +217,24 @@ void Mesh::Load(const char *input_file) {
 
       addTriangle(getVertex(a), getVertex(b), getVertex(c));
 
-      // We added this
-      getVertex(a)->incrementTriangleCount();
-      // We addes this
-      getVertex(b)->incrementTriangleCount();
-      // We added this
-      getVertex(c)->incrementTriangleCount();
+      // // We added this
+      // getVertex(a)->incrementTriangleCount();
+      // // We addes this
+      // getVertex(b)->incrementTriangleCount();
+      // // We added this
+      // getVertex(c)->incrementTriangleCount();
 
       if (d > -1) { 
         assert (d < numVertices()); 
         addTriangle(getVertex(a), getVertex(c), getVertex(d));
-        // We added this
-        getVertex(d)->incrementTriangleCount();
+        // // We added this
+        // getVertex(d)->incrementTriangleCount();
       }
       if (e > -1) { 
         assert (e < numVertices()); 
         addTriangle(getVertex(a), getVertex(d), getVertex(e));
-        // We added this
-        getVertex(e)->incrementTriangleCount();
+        // // We added this
+        // getVertex(e)->incrementTriangleCount();
       }
     } else if (!strcmp(token,"e")) {
       int num = sscanf (line, "%s %s %s %s\n", token, atoken, btoken, ctoken);
@@ -399,141 +395,86 @@ void Mesh::Simplification(int target_tri_count) {
 }
 
 
-
 // We added this function
 void Mesh::collapseEdge(Edge* edge) {
-if (edge == NULL) return;
-
-
-    // check if collaps doesnt intersect mesh
-
-    
-edges->Print();
-
-
-    // Get vertices and triangles involved in the edge collapse
-    Vertex* v1 = (*edge)[0];
-    Vertex* v2 = (*edge)[1];
-    //get the triangles that are connected to the edge
-    Triangle* t1 = edge->getTriangle();
-    Triangle* t2 = edge->getOpposite()->getTriangle();
-    //Triangle* t2 = edge->getOpposite() != NULL ? edge->getOpposite()->getTriangle() : NULL;
-
-    //calc and create new vertex
-    Vec3f newPos = (v1->get() + v2->get()) * 0.5;
-    Vertex* newV = addVertex(newPos);
-// Start the iteration
-
-  // Get the next and previous half-edges of the edge and stitch togheter there adjacency
-  //removed for now for debugging
-    Edge* nextEdge = edge->getNext()->getOpposite();
-    Edge* prevEdge = edge->getNext()->getNext()->getOpposite();
-
   
-   /* nextEdge->clearOpposite();
-    prevEdge->clearOpposite();
-    nextEdge->setOpposite(prevEdge);
-   
+  if (edge == NULL) return;
 
+  // Get vertices and triangles involved in the edge collapse
+  // Edge points to v1
+  Vertex* v1 = (*edge)[0]; // this is the vertex associated with the edge
+  Vertex* v2 = (*edge)[1];
 
-    // Get the other triangle of the edge that is colapsed
-    Edge* oppositeEdge = edge->getOpposite();
-    Edge* oppositeNext = oppositeEdge->getNext()->getOpposite();
-    Edge* oppositePrev = oppositeEdge->getNext()->getNext()->getOpposite();
-    oppositeNext->clearOpposite();
-    oppositePrev->clearOpposite();
-    oppositeNext->setOpposite(oppositePrev);*/
+  // Just info, can be deleted later
+  printf("v1 = (%.3f, %.3f, %.3f)\n", v1->x(), v1->y(), v1->z());
+  printf("v2 = (%.3f, %.3f, %.3f)\n", v2->x(), v2->y(), v2->z());
+  printf("v from edge = (%.3f, %.3f, %.3f)\n", edge->getVertex()->x(), edge->getVertex()->y(), edge->getVertex()->z());
 
-    // Remove the edge and triangles from the mesh
-    removeTriangle(t1);
-    removeTriangle(t2);
+  //get the triangles that are connected to the edge
+  Triangle* t1 = edge->getTriangle();
+  Triangle* t2 = edge->getOpposite()->getTriangle();
 
+  // Get the next and previous half-edges of the edge
+  Edge* nextEdge = edge->getNext();
+  Edge* nextEdgeOpposite = edge->getNext()->getOpposite();
+  Edge* prevEdge = edge->getNext()->getNext();
+  Edge* prevEdgeOpposite = edge->getNext()->getNext()->getOpposite();
+  Edge* oppositeEdge = edge->getOpposite();
+  Edge* oppositeNext = oppositeEdge->getNext();
+  Edge* oppositeNextOpposite = oppositeEdge->getNext()->getOpposite();
+  Edge* oppositePrev = oppositeEdge->getNext()->getNext();
+  Edge* oppositePrevOpposite = oppositeEdge->getNext()->getNext()->getOpposite();
+  
+  int end = 0;
+  Edge* current = edge->getNext()->getOpposite();
+  removeTriangle(t1);
+  while(end == 0) {
+    Edge* temp_next = current->getNext()->getOpposite();
+    Vertex* a = current->getVertex(); // this is v1 !!
+    printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
+    Vertex* b = current->getNext()->getVertex();
+    printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
+    Vertex* c = current->getNext()->getNext()->getVertex();
+    printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
+    Triangle* temp = current->getTriangle();
+    removeTriangle(temp);
+    printf("Triangle removed !!\n");
+    addTriangle(v2, c, b);
+    printf("Triangle added !!\n");
+    
+    current = temp_next;
+    if (current->getNext()->getOpposite()->getTriangle() == t2) {
+      printf("Last triangle to change \n");
+      end = 1;
+      Vertex* a = current->getVertex(); // this is v1 !!
+      printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
+      Vertex* b = current->getNext()->getVertex();
+      printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
+      Vertex* c = current->getNext()->getNext()->getVertex();
+      printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
+      removeTriangle(t2);
+      Triangle* temp = current->getTriangle();
+      removeTriangle(temp);
+      printf("Last triangle removed !!\n");
+      addTriangle(v2, c, b);
+      printf("Last triangle added !!\n");
+    }
+  };
 
+  printf("Ready with changing triangles\n");
+  nextEdgeOpposite->clearOpposite();
+  prevEdgeOpposite->clearOpposite();
+  nextEdgeOpposite->setOpposite(prevEdgeOpposite);
 
-    //arrays to store vertices of the temp deleted triangles
-    Array<Vertex*> *va1 = new Array<Vertex*>(INITIAL_VERTEX);
-    Array<Vertex*> *va2 = new Array<Vertex*>(INITIAL_VERTEX);
-    Array<Vertex*> *va3 = new Array<Vertex*>(INITIAL_VERTEX);
-    int count = 0;
-    Iterator<Edge*>* iter = edges->StartIteration();
+  oppositePrevOpposite->clearOpposite();
+  oppositeNextOpposite->clearOpposite();
+  oppositeNextOpposite->setOpposite(oppositePrevOpposite);
 
-  // Loop through the elements and delete all triangles containing v1 or v2
-  while (Edge* e = iter->GetNext()) {
-      if (e != nullptr) {
-          // Check if the current edge has v1 as its vertex
-          if (e->getVertex() == v1 ||e->getVertex() == v2) {
-              
-              // remove triangle and remove edge and create new ones
-              Triangle* t3 = e->getTriangle();
-              //delete oposites of triangle
-
-              e->clearOpposite();
-              e->getNext()->clearOpposite();
-              e->getNext()->getNext()->clearOpposite();
-
-              //two other vertices of the trianlge
-              Vertex* a = e->getNext()->getVertex();
-              Vertex* b = e->getNext()->getNext()->getVertex();
-              removeTriangle(t3);
-              //add vertices to triangle
-              va1->Add(newV);
-              va2->Add(a);
-              va3->Add(b);
-              count++;
-              printf("%d\n", count);
-
-              
-              // Update the vertex reference to v2
-              
-          }
-      } 
-  }
-  edges->EndIteration(iter);
-
-  printf("triangles removed\n");
-  //add the deleted triangles with the one vertex changed
-  for(int i = 0; i<count;i++){
-    printf("1\n");
-    Triangle* newT = addTriangle((*va1)[i],(*va2)[i],(*va3)[i]);
-              Edge* ab_op = newT->getEdge();
-              Edge* bc_op = newT->getEdge()->getNext();
-              Edge* ac_op = newT->getEdge()->getNext()->getNext();
-              //printf("%d\n",newT->getEdge()->getOpposite()->getVertex()->getIndex());
-              //setoposites
-              
-              //code to print new triangle and their adjacency
-              printf("v2 index%d\n",v2->getIndex());
-              printf("v1 index%d\n",v1->getIndex());
-                if (ab_op->getOpposite() == NULL) {
-                  printf("%d, %d\n",(*ab_op)[0]->getIndex(), (*ab_op)[1]->getIndex()) ;
-                  Vertex* temp = (*ab_op)[0];
-                  if((*ab_op)[0]==v2){
-                    temp = (*ab_op)[1];
-                  }
-
-                  Edge* op = getEdge((*ab_op)[0],(*ab_op)[1]);
-                  printf("rand%d, %d\n",(*op)[0]->getIndex(), (*op)[1]->getIndex()) ;
-
-                  }else{printf("op1\n");printf("%d, %d\n",(*ab_op)[0]->getIndex(), (*ab_op)[1]->getIndex()) ;}
-
-                if (bc_op->getOpposite() == NULL) { 
-                  printf("%d, %d\n",(*bc_op)[0]->getIndex(),(*bc_op)[1]->getIndex()) ;
-
-                }else{printf("op2\n");printf("%d, %d\n",(*bc_op)[0]->getIndex(),(*bc_op)[1]->getIndex()) ;}
-
-                if (ac_op->getOpposite() == NULL) {  
-                  printf("%d, %d\n",(*ac_op)[0]->getIndex(), (*ac_op)[1]->getIndex());
-
-                }else{printf("op3\n");printf("%d, %d\n",(*ac_op)[0]->getIndex(), (*ac_op)[1]->getIndex());}
-              //newT->getEdge()->setOpposite(ab_op);
-              //newT->getEdge()->getNext()->setOpposite(ab_op);
-              //newT->getEdge()->getNext()->getNext()->setOpposite(ab_op)
-  }
   vertices->Remove(v1);
   delete v1;
-    printf("v1 removed\n");
-  
+  printf("v1 removed\n");
 }
+
 
 // We added this function
 Edge* Mesh::selectEdgeToCollapse() {
