@@ -85,9 +85,9 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   Edge *ec_op = getEdge((*ec)[1], (*ec)[0]);  
 
   // The opposite edge is actually the same as the one that exists, but is points in the different direction
-  if (ea_op != NULL) { ea_op->setOpposite(ea); }
-  if (eb_op != NULL) { eb_op->setOpposite(eb); }
-  if (ec_op != NULL) { ec_op->setOpposite(ec); }
+  if (ea_op != NULL) { ea_op->setOpposite(ea); }else{printf("ea_op is NULL\n");}
+  if (eb_op != NULL) { eb_op->setOpposite(eb); }else{printf("eb_op is NULL\n");}
+  if (ec_op != NULL) { ec_op->setOpposite(ec); }else{printf("ec_op is NULL\n");}
 
   // add the triangle to the master list
   triangles->Add(t); 
@@ -427,11 +427,51 @@ void Mesh::collapseEdge(Edge* edge) {
   
   int end = 0;
   Edge* current = edge->getNext()->getOpposite();
+
+
+
+  //check for illegal edge collapses
+  Array<Vertex*> *vertTemp = new Array<Vertex*>(INITIAL_VERTEX);
+  vertTemp->Add(v1);
+  vertTemp->Add(edge->getNext()->getVertex());
+
+  //looping trough triangles connected to v1
+  while(current->getNext()->getOpposite()->getTriangle() != t2){
+
+    if(vertTemp->Member(current->getNext()->getVertex())){
+      printf("Illegal edge collapse\n");
+      return;
+    }
+    printf("1\n");
+    vertTemp->Add(current->getNext()->getVertex());
+    Edge* temp_next = current->getNext()->getOpposite();
+    current = temp_next;
+  }
+  current = edge->getOpposite()->getNext()->getOpposite();
+  vertTemp->Add(edge->getOpposite()->getNext()->getVertex());
+  
+  //looping trough triangles cottectd to v2
+  while(current->getNext()->getOpposite()->getTriangle() != t1){
+    if(vertTemp->Member(current->getNext()->getVertex())){
+      printf("Illegal edge collapse\n");
+      return;
+    }
+    vertTemp->Add(current->getNext()->getVertex());
+    Edge* temp_next = current->getNext()->getOpposite();
+    current = temp_next;
+    printf("2\n");
+
+  }
+  //remove t1 after checking if the collapse is legal
   removeTriangle(t1);
 
+
+  current = edge->getNext()->getOpposite();
+  //looping trough triangles connected to v1 and deleting and readding them with v2
   while(end == 0) {
     if (current->getNext()->getOpposite()->getTriangle() == t2) {
       printf("Last triangle to change \n");
+
       end = 1;
       removeTriangle(t2);
     }
@@ -439,6 +479,7 @@ void Mesh::collapseEdge(Edge* edge) {
     Vertex* a = current->getVertex(); // this is v1 !!
     Vertex* b = current->getNext()->getVertex();
     Vertex* c = current->getNext()->getNext()->getVertex();
+  
     // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
     // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
     // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
@@ -447,20 +488,36 @@ void Mesh::collapseEdge(Edge* edge) {
     printf("Triangle removed !!\n");
     addTriangle(v2, c, b);
     printf("Triangle added !!\n");
-    
     current = temp_next;
+  
   };
+    /*Vertex* a1 = prevEdgeOpposite->getVertex(); // this is v1 !!
+    Vertex* b1 = prevEdgeOpposite->getNext()->getVertex();
+    Vertex* c1 = prevEdgeOpposite->getNext()->getNext()->getVertex();
+
+
+    Vertex* a2 = oppositeNextOpposite->getVertex(); // this is v1 !!
+    Vertex* b2 = oppositeNextOpposite->getNext()->getVertex();
+    Vertex* c2 = oppositeNextOpposite->getNext()->getNext()->getVertex();
+
+    removeTriangle(prevEdgeOpposite->getTriangle());
+
+    removeTriangle(oppositeNextOpposite->getTriangle());
+    addTriangle(a1,c1,b1);
+    addTriangle(a2,c2,b2);*/
+        
 
   printf("Ready with changing triangles\n");
-  nextEdgeOpposite->clearOpposite();
+  /*nextEdgeOpposite->clearOpposite();
   prevEdgeOpposite->clearOpposite();
   nextEdgeOpposite->setOpposite(prevEdgeOpposite);
 
+
   oppositePrevOpposite->clearOpposite();
   oppositeNextOpposite->clearOpposite();
-  oppositeNextOpposite->setOpposite(oppositePrevOpposite);
+  oppositeNextOpposite->setOpposite(oppositePrevOpposite);*/
 
-  vertices->Remove(v1);
+  vertices->Remove(v1);   
   delete v1;
   printf("v1 removed\n");
 }
