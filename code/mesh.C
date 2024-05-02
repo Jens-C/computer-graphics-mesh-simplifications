@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <GL/gl.h>
+#include <random>
 
 #include "mesh.h"
 #include "edge.h"
@@ -371,11 +372,19 @@ bool compareEdges(const Edge* a, const Edge* b) {
 void Mesh::calculateCostOfVerticesAndEdges() {
   edgesSorted.clear();
 
+  //itterate trough all edges and calculate the QEM
   Iterator<Edge*>* iter = edges->StartIteration();
   while(Edge* e = iter->GetNext()) {
     float qem1 = assignQEM(e);
     float qem2 = assignQEM(e->getOpposite());
+    
+    
     e->setQEM(qem1 + qem2);
+    // std::random_device rd;  // Obtain a random number from hardware
+    // std::mt19937 gen(rd()); // Seed the generator
+    // std::uniform_real_distribution<float> dis(0.0f, 1.0f);
+    //float random_float = dis(gen);
+    // e->setQEM(random_float);
     edgesSorted.push_back(e);
   }
   edges->EndIteration(iter);
@@ -388,13 +397,14 @@ void Mesh::calculateCostOfVerticesAndEdges() {
 }
 
 // We added this function
-float Mesh::assignQEM(Edge* edge) {
-  Vertex* vertex = edge->getVertex();
-  Edge* next_edge;
+float Mesh::assignQEM(Edge* e) {
+  Vertex* vertex = e->getVertex();
+  
+  Edge* edge = e;
+
   Eigen::Matrix4d quadricMatrixTotal = Eigen::Matrix4d::Zero();
   do {
-    next_edge = edge->getNext()->getOpposite();
-    // Edge* e = edge->GetNext();
+    Edge* next_edge = edge->getNext()->getOpposite();
     Vertex* v1 = edge->getVertex();
     Vertex* v2 = edge->getNext()->getVertex();
     Vertex* v3 = edge->getNext()->getNext()->getVertex();
@@ -406,21 +416,20 @@ float Mesh::assignQEM(Edge* edge) {
     float b = 1.0;
     float c = 3.0;
     normal1.Get(a, b, c);
-    // std::cout << a_normal << b_normal << c_normal << std::endl;al;
+    //std::cout << a << b << c << std::endl;
 
     quadricMatrix << a*a, a*b, a*c, a*d,
                     a*b, b*b, b*c, b*d,
                     a*c, b*c, c*c, d*c,
                     a*d, b*d, d*c, d*d;
-    // std::cout << quadricMatrix << std::endl;
-
+    //std::cout << quadricMatrix << std::endl;
     quadricMatrixTotal += quadricMatrix;
-    // std::cout << "Total matrix \n" << quadricMatrixTotal << std::endl;
     edge = next_edge;
-  }while(next_edge != edge);
+  }while(edge != e);
+  //std::cout << "Total matrix \n" << quadricMatrixTotal << std::endl;
 
   Eigen::Vector4d v = Eigen::Vector4d(vertex->x(), vertex->y(), vertex->z(), 1.0);
-  float QEM = std::abs(v.dot(quadricMatrixTotal * v));
+  float QEM = std::abs(v.transpose().dot(quadricMatrixTotal * v));
   vertex->set(QEM);
   return QEM;
 }
@@ -446,10 +455,10 @@ void Mesh::Simplification(int target_tri_count) {
         // Collapse the selected edge
         bool isCollapsed = false;
         int i = 0;
-        // int s = edgesSorted.size();
+        int s = edgesSorted.size();
         while(!isCollapsed) {
-          // Edge* e = edgesSorted[s-i-1];
-          Edge* e = edgesSorted[i];
+           Edge* e = edgesSorted[s-i-1];
+          //Edge* e = edgesSorted[i];
           isCollapsed = collapseEdge(e);
           i++;
         }
