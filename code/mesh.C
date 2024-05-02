@@ -1,3 +1,4 @@
+#include <eigen3/Eigen/Dense>
 #include <stdio.h>
 #include <assert.h>
 #include <GL/gl.h>
@@ -10,6 +11,9 @@
 #include "glCanvas.h"
 // We included this
 #include "iostream"
+#include <cstdlib>
+#include <list>
+
 
 #define INITIAL_VERTEX 10000
 #define INITIAL_EDGE 10000
@@ -85,9 +89,9 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   Edge *ec_op = getEdge((*ec)[1], (*ec)[0]);  
 
   // The opposite edge is actually the same as the one that exists, but is points in the different direction
-  if (ea_op != NULL) { ea_op->setOpposite(ea); }else{printf("ea_op is NULL\n");}
-  if (eb_op != NULL) { eb_op->setOpposite(eb); }else{printf("eb_op is NULL\n");}
-  if (ec_op != NULL) { ec_op->setOpposite(ec); }else{printf("ec_op is NULL\n");}
+  if (ea_op != NULL) { ea_op->setOpposite(ea); }// else{printf("ea_op is NULL\n");}
+  if (eb_op != NULL) { eb_op->setOpposite(eb); }// else{printf("eb_op is NULL\n");}
+  if (ec_op != NULL) { ec_op->setOpposite(ec); }// else{printf("ec_op is NULL\n");}
 
   // add the triangle to the master list
   triangles->Add(t); 
@@ -137,6 +141,112 @@ Vertex* Mesh::getChildVertex(Vertex *p1, Vertex *p2) const {
 
 void Mesh::setParentsChild(Vertex *p1, Vertex *p2, Vertex *child) {
   vertex_parents->Add(new VertexParent(p1,p2,child));
+}
+
+// =======================================================================
+// PAINT
+// =======================================================================
+
+Vec3f ComputeNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
+  Vec3f v12 = p2;
+  v12 -= p1;
+  Vec3f v23 = p3;
+  v23 -= p2;
+  Vec3f normal;
+  Vec3f::Cross3(normal,v12,v23);
+  normal.Normalize();
+  return normal;
+}
+
+void InsertNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
+  Vec3f normal = ComputeNormal(p1,p2,p3);
+  glNormal3f(normal.x(), normal.y(), normal.z());
+}
+
+void Mesh::Paint(ArgParser *args) {
+
+  // scale it so it fits in the window
+  Vec3f center; bbox->getCenter(center);
+  float s = 1/bbox->maxDim();
+  glScalef(s, s, s);
+  glTranslatef(-center.x(), -center.y(), -center.z());
+
+  // this offset prevents "z-fighting" bewteen the edges and faces
+  // the edges will always win.
+  glEnable(GL_POLYGON_OFFSET_FILL);
+  glPolygonOffset(1.1, 4.0);
+
+  // draw the triangles
+  glColor3f(1,1,1);
+  Iterator<Triangle*> *iter = triangles->StartIteration();
+  glBegin (GL_TRIANGLES);
+  while (Triangle *t = iter->GetNext()) {
+    Vec3f a = (*t)[0]->get();
+    Vec3f b = (*t)[1]->get();
+    Vec3f c = (*t)[2]->get();
+    InsertNormal(a, b, c); 
+    glVertex3f(a.x(), a.y(), a.z());
+    glVertex3f(b.x(), b.y(), b.z());
+    glVertex3f(c.x(), c.y(), c.z());
+  }
+  triangles->EndIteration(iter);
+  glEnd();
+
+  glDisable(GL_POLYGON_OFFSET_FILL); 
+ 
+  if (args->wireframe) {
+    glDisable(GL_LIGHTING);
+
+    // draw all the interior, non-crease edges
+    glLineWidth(1);
+    glColor3f(0, 0, 0);
+    glBegin (GL_LINES);
+    Iterator<Edge*> *iter = edges->StartIteration();
+    while (Edge *e = iter->GetNext()) {
+      if (e->getOpposite() == NULL || e->getCrease() > 0) continue;
+      Vec3f a = (*e)[0]->get();
+      Vec3f b = (*e)[1]->get();
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
+    }
+    edges->EndIteration(iter);
+    glEnd();
+
+    // draw all the interior, crease edges
+    glLineWidth(3);
+    glColor3f(1, 1, 0);
+    glBegin (GL_LINES);
+    iter = edges->StartIteration();
+    while (Edge *e = iter->GetNext()) {
+      if (e->getOpposite() == NULL || e->getCrease() == 0) continue;
+      Vec3f a = (*e)[0]->get();
+      Vec3f b = (*e)[1]->get();
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
+    }
+    edges->EndIteration(iter);
+    glEnd();
+
+    // draw all the boundary edges
+    glLineWidth(3);
+    glColor3f(1, 0, 0);
+    glBegin (GL_LINES);
+    iter = edges->StartIteration();
+    while (Edge *e = iter->GetNext()) {
+      if (e->getOpposite() != NULL) continue;
+      assert (e->getCrease() == 0);
+      Vec3f a = (*e)[0]->get();
+      Vec3f b = (*e)[1]->get();
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
+    }
+    edges->EndIteration(iter);
+    glEnd();
+
+    glEnable(GL_LIGHTING);
+  }
+  
+  HandleGLError(); 
 }
 
 // =======================================================================
@@ -259,112 +369,88 @@ void Mesh::Load(const char *input_file) {
       printf ("LINE: '%s'",line);
     }
   }
+  // We added this function
+  calculateCostOfVerticesAndEdges();
 }
 
-// =======================================================================
-// PAINT
-// =======================================================================
-
-Vec3f ComputeNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
-  Vec3f v12 = p2;
-  v12 -= p1;
-  Vec3f v23 = p3;
-  v23 -= p2;
-  Vec3f normal;
-  Vec3f::Cross3(normal,v12,v23);
-  normal.Normalize();
-  return normal;
+bool compareEdges(const Edge* a, const Edge* b) {
+    return a->getQem() < b->getQem(); // Order by qem in ascending order
 }
 
-void InsertNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
-  Vec3f normal = ComputeNormal(p1,p2,p3);
-  glNormal3f(normal.x(), normal.y(), normal.z());
-}
 
-void Mesh::Paint(ArgParser *args) {
+// We added this function
+void Mesh::calculateCostOfVerticesAndEdges() {
+  edgesSorted.clear();
 
-  // scale it so it fits in the window
-  Vec3f center; bbox->getCenter(center);
-  float s = 1/bbox->maxDim();
-  glScalef(s, s, s);
-  glTranslatef(-center.x(), -center.y(), -center.z());
-
-  // this offset prevents "z-fighting" bewteen the edges and faces
-  // the edges will always win.
-  glEnable(GL_POLYGON_OFFSET_FILL);
-  glPolygonOffset(1.1, 4.0);
-
-  // draw the triangles
-  glColor3f(1,1,1);
-  Iterator<Triangle*> *iter = triangles->StartIteration();
-  glBegin (GL_TRIANGLES);
-  while (Triangle *t = iter->GetNext()) {
-    Vec3f a = (*t)[0]->get();
-    Vec3f b = (*t)[1]->get();
-    Vec3f c = (*t)[2]->get();
-    InsertNormal(a, b, c); 
-    glVertex3f(a.x(), a.y(), a.z());
-    glVertex3f(b.x(), b.y(), b.z());
-    glVertex3f(c.x(), c.y(), c.z());
+  Iterator<Edge*>* iter = edges->StartIteration();
+  while(Edge* e = iter->GetNext()) {
+    float qem1 = assignQEM(e);
+    float qem2 = assignQEM(e->getOpposite());
+    e->setQEM(qem1 + qem2);
+    edgesSorted.push_back(e);
+    // e->getOpposite()->setQEM(qem1 + qem2);
+    // std::cout << e->getQem() << std::endl;
   }
-  triangles->EndIteration(iter);
-  glEnd();
+  edges->EndIteration(iter);
 
-  glDisable(GL_POLYGON_OFFSET_FILL); 
- 
-  if (args->wireframe) {
-    glDisable(GL_LIGHTING);
+  std::sort(edgesSorted.begin(), edgesSorted.end(), compareEdges);
+  // Print the sorted list
+  // for (const auto& edge : edgesSorted) {
+  //     std::cout << "QEM: " << edge->getQem() << std::endl;
+  // }
+}
 
-    // draw all the interior, non-crease edges
-    glLineWidth(1);
-    glColor3f(0, 0, 0);
-    glBegin (GL_LINES);
-    Iterator<Edge*> *iter = edges->StartIteration();
-    while (Edge *e = iter->GetNext()) {
-      if (e->getOpposite() == NULL || e->getCrease() > 0) continue;
-      Vec3f a = (*e)[0]->get();
-      Vec3f b = (*e)[1]->get();
-      glVertex3f(a.x(), a.y(), a.z());
-      glVertex3f(b.x(), b.y(), b.z());
-    }
-    edges->EndIteration(iter);
-    glEnd();
+// We added this function
+float Mesh::assignQEM(Edge* edge) {
+  Vertex* vertex = edge->getVertex();
+  // if (vertex->getQem() == 10000.0) {
+    Edge* next_edge;
+    Eigen::Matrix4d quadricMatrixTotal = Eigen::Matrix4d::Zero();
+    do {
+      next_edge = edge->getNext()->getOpposite();
+      // Edge* e = edge->GetNext();
+      Vertex* v1 = edge->getVertex();
+      Vertex* v2 = edge->getNext()->getVertex();
+      Vertex* v3 = edge->getNext()->getNext()->getVertex();
+      Vec3f normal1 = ComputeNormal(v1->get(), v2->get(), v3->get());
+      float d = -normal1.Dot3(v1->get());
+      Eigen::Matrix4d quadricMatrix = Eigen::Matrix4d::Zero();
+      
+      float a_normal = 2.0;
+      float b_normal = 1.0;
+      float c_normal = 3.0;
+      normal1.Get(a_normal, b_normal, c_normal);
+      // std::cout << a_normal << b_normal << c_normal << std::endl;
 
-    // draw all the interior, crease edges
-    glLineWidth(3);
-    glColor3f(1, 1, 0);
-    glBegin (GL_LINES);
-    iter = edges->StartIteration();
-    while (Edge *e = iter->GetNext()) {
-      if (e->getOpposite() == NULL || e->getCrease() == 0) continue;
-      Vec3f a = (*e)[0]->get();
-      Vec3f b = (*e)[1]->get();
-      glVertex3f(a.x(), a.y(), a.z());
-      glVertex3f(b.x(), b.y(), b.z());
-    }
-    edges->EndIteration(iter);
-    glEnd();
+      double a = a_normal*a_normal;
+      double b = a_normal*b_normal;
+      double c = a_normal*c_normal;
+      double dd = a_normal*d;
+      double ee = b_normal*b_normal;
+      double f = b_normal*c_normal;
+      double g = b_normal*d;
+      double h = c_normal*c_normal;
+      double i = d*c_normal;
+      double j = d*d;
+      // Populate the quadric matrix with the computed coefficients
+      quadricMatrix << a, b, c, dd,
+                      b, ee, f, g,
+                      c, f, h, i,
+                      dd, g, i, j;
+      // std::cout << quadricMatrix << std::endl;
 
-    // draw all the boundary edges
-    glLineWidth(3);
-    glColor3f(1, 0, 0);
-    glBegin (GL_LINES);
-    iter = edges->StartIteration();
-    while (Edge *e = iter->GetNext()) {
-      if (e->getOpposite() != NULL) continue;
-      assert (e->getCrease() == 0);
-      Vec3f a = (*e)[0]->get();
-      Vec3f b = (*e)[1]->get();
-      glVertex3f(a.x(), a.y(), a.z());
-      glVertex3f(b.x(), b.y(), b.z());
-    }
-    edges->EndIteration(iter);
-    glEnd();
+      quadricMatrixTotal += quadricMatrix;
+      // std::cout << "Total matrix \n" << quadricMatrixTotal << std::endl;
+      edge = next_edge;
+    }while(next_edge != edge);
 
-    glEnable(GL_LIGHTING);
-  }
-  
-  HandleGLError(); 
+    Eigen::Vector4d v = Eigen::Vector4d(vertex->x(), vertex->y(), vertex->z(), 1.0);
+    float QEM = std::abs(v.dot(quadricMatrixTotal * v));
+    // std::cout << "QEM value: " << QEM << std::endl;
+    vertex->set(QEM);
+    return QEM;
+  // }
+  return 10000.0;
 }
 
 // =================================================================
@@ -386,24 +472,50 @@ void Mesh::Simplification(int target_tri_count) {
     // Perform simplification until the target number of triangles is reached
     while (numTriangles() > target_tri_count) {
         // Select an edge to collapse based on some simplification criteria
-        Edge* edge_to_collapse = selectEdgeToCollapse();
-        printf("Edge to collapse: %d %d\n", (*edge_to_collapse)[0]->getIndex(), (*edge_to_collapse)[1]->getIndex());
+        // Edge* edge_to_collapse = selectEdgeToCollapse();
+        // printf("Edge to collapse: %d %d\n", (*edge_to_collapse)[0]->getIndex(), (*edge_to_collapse)[1]->getIndex());
         
         // Collapse the selected edge
-        collapseEdge(edge_to_collapse);
+        bool isCollapsed = false;
+        int i = 0;
+        while(!isCollapsed) {
+          Edge* e = edgesSorted[i];
+          isCollapsed = collapseEdge(e);
+          i++;
+        }
     }
 }
 
+// // We added this function
+// Edge* Mesh::selectEdgeToCollapse() {
+//   // for now a random edge is selected
+//   // Iterator<Edge*>* iter = edges->StartIteration();
+//   // Edge* edgeWithSmallestQEM = iter->GetNext();
+//   // while(Edge* e = iter->GetNext()) {
+//   //   if(edgeWithSmallestQEM->getQem() > e->getQem()) {
+//   //     edgeWithSmallestQEM = e;
+//   //   }
+//   // }
+//   // edges->EndIteration(iter);
+//   // return edges->ChooseRandom();
+//   Edge* e = edgesSorted.front();
+//   // edgesSorted.erase(edgesSorted.begin());
+//   return e;
+// }
+
 
 // We added this function
-void Mesh::collapseEdge(Edge* edge) {
+bool Mesh::collapseEdge(Edge* edge) {
   
-  if (edge == NULL) return;
+  if (edge == NULL) return false;
 
   // Get vertices and triangles involved in the edge collapse
   // Edge points to v1
   Vertex* v1 = (*edge)[0]; // this is the vertex associated with the edge
   Vertex* v2 = (*edge)[1];
+  Vec3f newPos = (v1->get() + v2->get()) * 0.5;
+
+  v2->set(newPos);
 
   // Just info, can be deleted later
   // printf("v1 = (%.3f, %.3f, %.3f)\n", v1->x(), v1->y(), v1->z());
@@ -440,7 +552,7 @@ void Mesh::collapseEdge(Edge* edge) {
 
     if(vertTemp->Member(current->getNext()->getVertex())){
       printf("Illegal edge collapse\n");
-      return;
+      return false;
     }
     printf("1\n");
     vertTemp->Add(current->getNext()->getVertex());
@@ -454,7 +566,7 @@ void Mesh::collapseEdge(Edge* edge) {
   while(current->getNext()->getOpposite()->getTriangle() != t1){
     if(vertTemp->Member(current->getNext()->getVertex())){
       printf("Illegal edge collapse\n");
-      return;
+      return false;
     }
     vertTemp->Add(current->getNext()->getVertex());
     Edge* temp_next = current->getNext()->getOpposite();
@@ -474,6 +586,7 @@ void Mesh::collapseEdge(Edge* edge) {
 
       end = 1;
       removeTriangle(t2);
+
     }
     Edge* temp_next = current->getNext()->getOpposite();
     Vertex* a = current->getVertex(); // this is v1 !!
@@ -520,16 +633,10 @@ void Mesh::collapseEdge(Edge* edge) {
   vertices->Remove(v1);   
   delete v1;
   printf("v1 removed\n");
+
+  calculateCostOfVerticesAndEdges();
+  return true;
 }
-
-
-// We added this function
-Edge* Mesh::selectEdgeToCollapse() {
-    // for now a random edge is selected
-    Edge* edg = edges->ChooseRandom();
-    return edges->ChooseRandom();
-}
-
 
 
 // =================================================================

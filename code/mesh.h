@@ -6,6 +6,7 @@
 #include "bag.h"
 #include "boundingbox.h"
 #include "argparser.h"
+#include <vector>
 
 class Vertex;
 class Edge;
@@ -48,6 +49,12 @@ public:
     return v; 
   }
 
+  // We implemented this
+  void calculateCostOfVerticesAndEdges();
+
+  // We added this
+  float assignQEM(Edge* edge);
+
   // =====
   // EDGES
   int numEdges() const { 
@@ -78,10 +85,12 @@ public:
   void LoopSubdivision();
   void Simplification(int target_tri_count);
 
+  
+
   // We added this
-  void collapseEdge(Edge* triangle);
+  bool collapseEdge(Edge* triangle);
   // We added this
-  Edge* selectEdgeToCollapse();
+  // Edge* selectEdgeToCollapse();
   // We added this
   void removeUnusedVertices();
 
@@ -99,10 +108,13 @@ private:
   // All the vertex child-parent relations in a hash table
   Bag<VertexParent*> *vertex_parents;
 
+  // We added this
+  std::vector<Edge*> edgesSorted;
 };
 
 // ======================================================================
 // ======================================================================
+
 
 #endif
 

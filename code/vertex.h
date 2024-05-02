@@ -45,6 +45,11 @@ public:
     return position; 
   }
 
+  // We added this
+  const float getQem() const {
+    return qem;
+  }
+
   // added by us
   int getTriangleCount() const { 
     return triangleCount; 
@@ -58,6 +63,16 @@ public:
 
   void set(double x, double y, double z) { 
     position.Set(x, y, z); 
+  }
+
+  // We added this
+  void set(float qem) {
+    qem = qem;
+  }
+
+  // We added this
+  void clearQEM() {
+    qem = 10000.0;
   }
 
   // added by us
@@ -87,6 +102,10 @@ private:
     // Count of triangles associated with this vertex
   int triangleCount;
 
+  // We added this
+  // used for saving QEM of vertex
+  // Initialised very large 
+  float qem = 10000.0;
 };
 
 // ==========================================================

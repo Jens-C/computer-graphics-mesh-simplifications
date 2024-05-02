@@ -4,6 +4,7 @@
 #include <assert.h>
 #include "utils.h"
 #include "math.h"
+#include <random>
 
 template <class ITERATOR_ELEMENT> class Iterator;
 
@@ -92,7 +93,13 @@ public:
     assert (Count() > 0);
     while (1) {    
       // generate random integer with range 0 to size
-      int random_int = int(floor(drand48() * size));
+      // int random_int = int(floor(drand48() * size));
+      // Changed code to generate random edge because it was always the same with this existing code
+      std::random_device rd;
+      std::mt19937 gen(rd());
+      std::uniform_int_distribution<> distrib(0, size - 1);
+      // Generate a random integer within the range
+      int random_int = distrib(gen);
       if (marks[random_int] == BAG_MARK_PRESENT)
         return data[random_int];
     }

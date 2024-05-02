@@ -63,6 +63,11 @@ public:
     assert(0);
   }
 
+  // We added this
+  const float getQem() const {
+    return qem;
+  }
+
   // =========
   // MODIFIERS
   void setOpposite(Edge *e) {
@@ -87,6 +92,17 @@ public:
     assert (triangle == e->triangle);
     next = e;
   }
+
+  // We added this
+  void setQEM(float qem_to_set) {
+    qem = qem_to_set;
+  }
+
+  // We added this
+  void clearQEM() {
+    qem = 10000.0;
+  }
+
   void setCrease(float c) { 
     crease = c; 
   }
@@ -111,6 +127,9 @@ private:
   Edge *next;
   // indicates wheter the edge is sharp or not
   float crease;
+
+  // We added the QEM
+  float qem = 10000;
 };
 
 // ===================================================================
