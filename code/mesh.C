@@ -327,24 +327,13 @@ void Mesh::Load(const char *input_file) {
 
       addTriangle(getVertex(a), getVertex(b), getVertex(c));
 
-      // // We added this
-      // getVertex(a)->incrementTriangleCount();
-      // // We addes this
-      // getVertex(b)->incrementTriangleCount();
-      // // We added this
-      // getVertex(c)->incrementTriangleCount();
-
       if (d > -1) { 
         assert (d < numVertices()); 
         addTriangle(getVertex(a), getVertex(c), getVertex(d));
-        // // We added this
-        // getVertex(d)->incrementTriangleCount();
       }
       if (e > -1) { 
         assert (e < numVertices()); 
         addTriangle(getVertex(a), getVertex(d), getVertex(e));
-        // // We added this
-        // getVertex(e)->incrementTriangleCount();
       }
     } else if (!strcmp(token,"e")) {
       int num = sscanf (line, "%s %s %s %s\n", token, atoken, btoken, ctoken);
@@ -373,10 +362,10 @@ void Mesh::Load(const char *input_file) {
   calculateCostOfVerticesAndEdges();
 }
 
+
 bool compareEdges(const Edge* a, const Edge* b) {
     return a->getQem() < b->getQem(); // Order by qem in ascending order
 }
-
 
 // We added this function
 void Mesh::calculateCostOfVerticesAndEdges() {
@@ -388,8 +377,6 @@ void Mesh::calculateCostOfVerticesAndEdges() {
     float qem2 = assignQEM(e->getOpposite());
     e->setQEM(qem1 + qem2);
     edgesSorted.push_back(e);
-    // e->getOpposite()->setQEM(qem1 + qem2);
-    // std::cout << e->getQem() << std::endl;
   }
   edges->EndIteration(iter);
 
@@ -403,54 +390,39 @@ void Mesh::calculateCostOfVerticesAndEdges() {
 // We added this function
 float Mesh::assignQEM(Edge* edge) {
   Vertex* vertex = edge->getVertex();
-  // if (vertex->getQem() == 10000.0) {
-    Edge* next_edge;
-    Eigen::Matrix4d quadricMatrixTotal = Eigen::Matrix4d::Zero();
-    do {
-      next_edge = edge->getNext()->getOpposite();
-      // Edge* e = edge->GetNext();
-      Vertex* v1 = edge->getVertex();
-      Vertex* v2 = edge->getNext()->getVertex();
-      Vertex* v3 = edge->getNext()->getNext()->getVertex();
-      Vec3f normal1 = ComputeNormal(v1->get(), v2->get(), v3->get());
-      float d = -normal1.Dot3(v1->get());
-      Eigen::Matrix4d quadricMatrix = Eigen::Matrix4d::Zero();
-      
-      float a_normal = 2.0;
-      float b_normal = 1.0;
-      float c_normal = 3.0;
-      normal1.Get(a_normal, b_normal, c_normal);
-      // std::cout << a_normal << b_normal << c_normal << std::endl;
+  Edge* next_edge;
+  Eigen::Matrix4d quadricMatrixTotal = Eigen::Matrix4d::Zero();
+  do {
+    next_edge = edge->getNext()->getOpposite();
+    // Edge* e = edge->GetNext();
+    Vertex* v1 = edge->getVertex();
+    Vertex* v2 = edge->getNext()->getVertex();
+    Vertex* v3 = edge->getNext()->getNext()->getVertex();
+    Vec3f normal1 = ComputeNormal(v1->get(), v2->get(), v3->get());
+    float d = -normal1.Dot3(v1->get());
+    Eigen::Matrix4d quadricMatrix = Eigen::Matrix4d::Zero();
+    
+    float a = 2.0;
+    float b = 1.0;
+    float c = 3.0;
+    normal1.Get(a, b, c);
+    // std::cout << a_normal << b_normal << c_normal << std::endl;al;
 
-      double a = a_normal*a_normal;
-      double b = a_normal*b_normal;
-      double c = a_normal*c_normal;
-      double dd = a_normal*d;
-      double ee = b_normal*b_normal;
-      double f = b_normal*c_normal;
-      double g = b_normal*d;
-      double h = c_normal*c_normal;
-      double i = d*c_normal;
-      double j = d*d;
-      // Populate the quadric matrix with the computed coefficients
-      quadricMatrix << a, b, c, dd,
-                      b, ee, f, g,
-                      c, f, h, i,
-                      dd, g, i, j;
-      // std::cout << quadricMatrix << std::endl;
+    quadricMatrix << a*a, a*b, a*c, a*d,
+                    a*b, b*b, b*c, b*d,
+                    a*c, b*c, c*c, d*c,
+                    a*d, b*d, d*c, d*d;
+    // std::cout << quadricMatrix << std::endl;
 
-      quadricMatrixTotal += quadricMatrix;
-      // std::cout << "Total matrix \n" << quadricMatrixTotal << std::endl;
-      edge = next_edge;
-    }while(next_edge != edge);
+    quadricMatrixTotal += quadricMatrix;
+    // std::cout << "Total matrix \n" << quadricMatrixTotal << std::endl;
+    edge = next_edge;
+  }while(next_edge != edge);
 
-    Eigen::Vector4d v = Eigen::Vector4d(vertex->x(), vertex->y(), vertex->z(), 1.0);
-    float QEM = std::abs(v.dot(quadricMatrixTotal * v));
-    // std::cout << "QEM value: " << QEM << std::endl;
-    vertex->set(QEM);
-    return QEM;
-  // }
-  return 10000.0;
+  Eigen::Vector4d v = Eigen::Vector4d(vertex->x(), vertex->y(), vertex->z(), 1.0);
+  float QEM = std::abs(v.dot(quadricMatrixTotal * v));
+  vertex->set(QEM);
+  return QEM;
 }
 
 // =================================================================
@@ -471,37 +443,21 @@ void Mesh::Simplification(int target_tri_count) {
     // We added everything from here in this function
     // Perform simplification until the target number of triangles is reached
     while (numTriangles() > target_tri_count) {
-        // Select an edge to collapse based on some simplification criteria
-        // Edge* edge_to_collapse = selectEdgeToCollapse();
-        // printf("Edge to collapse: %d %d\n", (*edge_to_collapse)[0]->getIndex(), (*edge_to_collapse)[1]->getIndex());
-        
         // Collapse the selected edge
         bool isCollapsed = false;
         int i = 0;
+        // int s = edgesSorted.size();
         while(!isCollapsed) {
+          // Edge* e = edgesSorted[s-i-1];
           Edge* e = edgesSorted[i];
           isCollapsed = collapseEdge(e);
           i++;
         }
+        // for (const auto& edge : edgesSorted) {
+        //   std::cout << "QEM: " << edge->getQem() << std::endl;
+        // }
     }
 }
-
-// // We added this function
-// Edge* Mesh::selectEdgeToCollapse() {
-//   // for now a random edge is selected
-//   // Iterator<Edge*>* iter = edges->StartIteration();
-//   // Edge* edgeWithSmallestQEM = iter->GetNext();
-//   // while(Edge* e = iter->GetNext()) {
-//   //   if(edgeWithSmallestQEM->getQem() > e->getQem()) {
-//   //     edgeWithSmallestQEM = e;
-//   //   }
-//   // }
-//   // edges->EndIteration(iter);
-//   // return edges->ChooseRandom();
-//   Edge* e = edgesSorted.front();
-//   // edgesSorted.erase(edgesSorted.begin());
-//   return e;
-// }
 
 
 // We added this function
@@ -514,13 +470,7 @@ bool Mesh::collapseEdge(Edge* edge) {
   Vertex* v1 = (*edge)[0]; // this is the vertex associated with the edge
   Vertex* v2 = (*edge)[1];
   Vec3f newPos = (v1->get() + v2->get()) * 0.5;
-
   v2->set(newPos);
-
-  // Just info, can be deleted later
-  // printf("v1 = (%.3f, %.3f, %.3f)\n", v1->x(), v1->y(), v1->z());
-  // printf("v2 = (%.3f, %.3f, %.3f)\n", v2->x(), v2->y(), v2->z());
-  // printf("v from edge = (%.3f, %.3f, %.3f)\n", edge->getVertex()->x(), edge->getVertex()->y(), edge->getVertex()->z());
 
   //get the triangles that are connected to the edge
   Triangle* t1 = edge->getTriangle();
@@ -540,8 +490,6 @@ bool Mesh::collapseEdge(Edge* edge) {
   int end = 0;
   Edge* current = edge->getNext()->getOpposite();
 
-
-
   //check for illegal edge collapses
   Array<Vertex*> *vertTemp = new Array<Vertex*>(INITIAL_VERTEX);
   vertTemp->Add(v1);
@@ -549,12 +497,9 @@ bool Mesh::collapseEdge(Edge* edge) {
 
   //looping trough triangles connected to v1
   while(current->getNext()->getOpposite()->getTriangle() != t2){
-
     if(vertTemp->Member(current->getNext()->getVertex())){
-      printf("Illegal edge collapse\n");
       return false;
     }
-    printf("1\n");
     vertTemp->Add(current->getNext()->getVertex());
     Edge* temp_next = current->getNext()->getOpposite();
     current = temp_next;
@@ -565,37 +510,26 @@ bool Mesh::collapseEdge(Edge* edge) {
   //looping trough triangles cottectd to v2
   while(current->getNext()->getOpposite()->getTriangle() != t1){
     if(vertTemp->Member(current->getNext()->getVertex())){
-      printf("Illegal edge collapse\n");
       return false;
     }
     vertTemp->Add(current->getNext()->getVertex());
     Edge* temp_next = current->getNext()->getOpposite();
     current = temp_next;
-    printf("2\n");
-
   }
   //remove t1 after checking if the collapse is legal
   removeTriangle(t1);
-
 
   current = edge->getNext()->getOpposite();
   //looping trough triangles connected to v1 and deleting and readding them with v2
   while(end == 0) {
     if (current->getNext()->getOpposite()->getTriangle() == t2) {
-      printf("Last triangle to change \n");
-
       end = 1;
       removeTriangle(t2);
-
     }
     Edge* temp_next = current->getNext()->getOpposite();
-    Vertex* a = current->getVertex(); // this is v1 !!
+    // current->getVertex() => this is v1 !!
     Vertex* b = current->getNext()->getVertex();
     Vertex* c = current->getNext()->getNext()->getVertex();
-  
-    // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", a->x(), a->y(), a->z());
-    // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", b->x(), b->y(), b->z());
-    // printf("Is the v1 ????? (%.3f, %.3f, %.3f)\n", c->x(), c->y(), c->z());
     Triangle* temp = current->getTriangle();
     removeTriangle(temp);
     printf("Triangle removed !!\n");
@@ -604,32 +538,7 @@ bool Mesh::collapseEdge(Edge* edge) {
     current = temp_next;
   
   };
-    /*Vertex* a1 = prevEdgeOpposite->getVertex(); // this is v1 !!
-    Vertex* b1 = prevEdgeOpposite->getNext()->getVertex();
-    Vertex* c1 = prevEdgeOpposite->getNext()->getNext()->getVertex();
-
-
-    Vertex* a2 = oppositeNextOpposite->getVertex(); // this is v1 !!
-    Vertex* b2 = oppositeNextOpposite->getNext()->getVertex();
-    Vertex* c2 = oppositeNextOpposite->getNext()->getNext()->getVertex();
-
-    removeTriangle(prevEdgeOpposite->getTriangle());
-
-    removeTriangle(oppositeNextOpposite->getTriangle());
-    addTriangle(a1,c1,b1);
-    addTriangle(a2,c2,b2);*/
         
-
-  printf("Ready with changing triangles\n");
-  /*nextEdgeOpposite->clearOpposite();
-  prevEdgeOpposite->clearOpposite();
-  nextEdgeOpposite->setOpposite(prevEdgeOpposite);
-
-
-  oppositePrevOpposite->clearOpposite();
-  oppositeNextOpposite->clearOpposite();
-  oppositeNextOpposite->setOpposite(oppositePrevOpposite);*/
-
   vertices->Remove(v1);   
   delete v1;
   printf("v1 removed\n");
