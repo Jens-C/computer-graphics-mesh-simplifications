@@ -1,6 +1,7 @@
 #ifndef MESH_H
 #define MESH_H
 
+#include <eigen3/Eigen/Dense>
 #include "vectors.h"
 #include "array.h"
 #include "bag.h"
@@ -53,7 +54,7 @@ public:
   void calculateCostOfVerticesAndEdges();
 
   // We added this
-  float assignQEM(Edge* edge);
+  Eigen::Matrix4d assignQEM(Edge* edge);
 
   // =====
   // EDGES

@@ -1,6 +1,7 @@
 #ifndef _VERTEX_H
 #define _VERTEX_H
 
+#include <eigen3/Eigen/Dense>
 #include <stdio.h>
 #include <assert.h>
 
@@ -46,7 +47,7 @@ public:
   }
 
   // We added this
-  const float getQem() const {
+  const Eigen::Matrix4d getQem() const {
     return qem;
   }
 
@@ -66,13 +67,13 @@ public:
   }
 
   // We added this
-  void set(float qem) {
+  void set(Eigen::Matrix4d qem) {
     qem = qem;
   }
 
   // We added this
   void clearQEM() {
-    qem = 10000.0;
+    qem = Eigen::Matrix4d::Zero();
   }
 
   // added by us
@@ -105,7 +106,7 @@ private:
   // We added this
   // used for saving QEM of vertex
   // Initialised very large 
-  float qem = 10000.0;
+  Eigen::Matrix4d qem = Eigen::Matrix4d::Zero();
 };
 
 // ==========================================================
