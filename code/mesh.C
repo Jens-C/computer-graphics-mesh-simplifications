@@ -389,9 +389,9 @@ void Mesh::calculateCostOfVerticesAndEdges() {
 
   std::sort(edgesSorted.begin(), edgesSorted.end(), compareEdges);
   // Print the sorted list
-  for (const auto& edge : edgesSorted) {
-      std::cout << "QEM: " << edge->getQem() << std::endl;
-  }
+  // for (const auto& edge : edgesSorted) {
+  //     std::cout << "QEM: " << edge->getQem() << std::endl;
+  // }
 }
 
 // We added this function
@@ -401,7 +401,6 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
   Eigen::Matrix4d quadricMatrixTotal = Eigen::Matrix4d::Zero();
   do {
     Edge* next_edge = edge->getNext()->getOpposite();
-    // Edge* e = edge->GetNext();
     Vertex* v1 = edge->getVertex();
     Vertex* v2 = edge->getNext()->getVertex();
     Vertex* v3 = edge->getNext()->getNext()->getVertex();
@@ -413,21 +412,16 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
     float b = 1.0;
     float c = 3.0;
     normal1.Get(a, b, c);
-    // std::cout << a << b << c << std::endl;al;
 
     quadricMatrix << a*a, a*b, a*c, a*d,
                     a*b, b*b, b*c, b*d,
                     a*c, b*c, c*c, d*c,
                     a*d, b*d, d*c, d*d;
-    // std::cout << quadricMatrix << std::endl;
 
     quadricMatrixTotal += quadricMatrix;
-    // std::cout << "Total matrix \n" << quadricMatrixTotal << std::endl;
     edge = next_edge;
-  }while(edge != e);
+  } while(edge != e);
 
-  // Eigen::Vector4d v = Eigen::Vector4d(vertex->x(), vertex->y(), vertex->z(), 1.0);
-  // float QEM = std::abs(v.dot(quadricMatrixTotal * v));
   vertex->set(quadricMatrixTotal);
   return quadricMatrixTotal;
 }
@@ -460,9 +454,6 @@ void Mesh::Simplification(int target_tri_count) {
           isCollapsed = collapseEdge(e);
           i++;
         }
-        // for (const auto& edge : edgesSorted) {
-        //   std::cout << "QEM: " << edge->getQem() << std::endl;
-        // }
     }
 }
 
@@ -539,16 +530,11 @@ bool Mesh::collapseEdge(Edge* edge) {
     Vertex* c = current->getNext()->getNext()->getVertex();
     Triangle* temp = current->getTriangle();
     removeTriangle(temp);
-    printf("Triangle removed !!\n");
     addTriangle(v2, c, b);
-    printf("Triangle added !!\n");
     current = temp_next;
-  
-  };
-        
+  }; 
   vertices->Remove(v1);   
   delete v1;
-  printf("v1 removed\n");
 
   calculateCostOfVerticesAndEdges();
   return true;
