@@ -465,7 +465,32 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
 // =================================================================
 
 void Mesh::LoopSubdivision() {
-  printf ("Subdivide the mesh!\n");
+  std::ofstream outFile(filename);
+    if (!outFile.is_open()) {
+        std::cerr << "Error: Unable to open file " << filename << " for writing." << std::endl;
+        return;
+    }
+
+    // Write vertices
+    for (int i = 0; i < mesh.numVertices(); ++i) {
+        const Vec3f& vertex = mesh.getVertex(i);
+        outFile << "v " << vertex.x() << " " << vertex.y() << " " << vertex.z() << std::endl;
+    }
+
+    // Write faces
+    for (int i = 0; i < mesh.numFaces(); ++i) {
+        const Face& face = mesh.getFace(i);
+        outFile << "f ";
+        for (int j = 0; j < face.numVertices(); ++j) {
+            outFile << face.getVertexIndex(j) + 1 << " "; // OBJ format uses 1-based indexing
+        }
+        outFile << std::endl;
+    }
+
+    // Optionally, write normals, texture coordinates, or other data here if needed
+
+    outFile.close();
+    std::cout << "Mesh saved to " << filename << std::endl;
 }
 
 // =================================================================
