@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <GL/gl.h>
-
+#include <fstream>
 #include "mesh.h"
 #include "edge.h"
 #include "vertex.h"
@@ -98,7 +98,6 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
 }
 
 void Mesh::removeTriangle(Triangle *t) {
-  printf("removing triangle\n");
   Edge *ea = t->getEdge();
   Edge *eb = ea->getNext();
   Edge *ec = eb->getNext();
@@ -113,7 +112,6 @@ void Mesh::removeTriangle(Triangle *t) {
   if (edges->Member(ec))
     edges->Remove(ec);
 
-  printf("edges removed\n");
   
   // Check if the triangle is already removed before attempting to remove it
   // We added the if statements
@@ -465,32 +463,30 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
 // =================================================================
 
 void Mesh::LoopSubdivision() {
-  std::ofstream outFile(filename);
+  std::ofstream outFile("./data/out.obj");
     if (!outFile.is_open()) {
-        std::cerr << "Error: Unable to open file " << filename << " for writing." << std::endl;
+        std::cerr << "Error: Unable to open file " << "out.obj" << " for writing." << std::endl;
         return;
     }
-
+    int* vertexid = new int[numVertices()]; 
     // Write vertices
-    for (int i = 0; i < mesh.numVertices(); ++i) {
-        const Vec3f& vertex = mesh.getVertex(i);
+    for (int i = 0; i < numVertices(); ++i) {
+        Vec3f vertex = getVertex(i)->get();
+        vertexid[getVertex(i)->getIndex()] = i+1;
         outFile << "v " << vertex.x() << " " << vertex.y() << " " << vertex.z() << std::endl;
     }
 
     // Write faces
-    for (int i = 0; i < mesh.numFaces(); ++i) {
-        const Face& face = mesh.getFace(i);
-        outFile << "f ";
-        for (int j = 0; j < face.numVertices(); ++j) {
-            outFile << face.getVertexIndex(j) + 1 << " "; // OBJ format uses 1-based indexing
-        }
-        outFile << std::endl;
-    }
-
-    // Optionally, write normals, texture coordinates, or other data here if needed
+      Iterator<Triangle*> *iter = triangles->StartIteration();
+      while (Triangle *t = iter->GetNext()) {
+        outFile << "f " << vertexid[(*t)[0]->getIndex()] << " " << vertexid[(*t)[1]->getIndex()]<< " " << vertexid[(*t)[2]->getIndex()] << std::endl;
+      }
+      
+    triangles->EndIteration(iter);
 
     outFile.close();
-    std::cout << "Mesh saved to " << filename << std::endl;
+    std::cout << "Mesh saved to " << "filename" << std::endl;
+
 }
 
 // =================================================================

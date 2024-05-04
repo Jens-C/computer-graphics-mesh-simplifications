@@ -112,7 +112,7 @@ void GLCanvas::selectEdge(int x, int y) {
 
     gluUnProject(winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
-    std::cout << "Edge selected: " << posX << posY << posZ << std::endl;
+    //std::cout << "Edge selected: " << posX << posY << posZ << std::endl;
 
     // Now you have the world coordinates (posX, posY, posZ) where the mouse clicked
     // Use these coordinates to select the edge
@@ -133,9 +133,9 @@ void GLCanvas::mouse(int button, int state, int x, int y) {
 
   // We added this
   // If the left button is pressed and state is down
-  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-      selectEdge(x, y);
-  }
+  // if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+  //     selectEdge(x, y);
+  // }
 }
 
 // ========================================================
@@ -149,7 +149,6 @@ void GLCanvas::motion(int x, int y) {
     camera->rotateCamera(0.005*(mouseX-x), 0.005*(mouseY-y));
     mouseX = x;
     mouseY = y;
-    printf("Start rotation \n");
   }
   // Middle button = translation
   // (move camera perpendicular to the direction vector)
