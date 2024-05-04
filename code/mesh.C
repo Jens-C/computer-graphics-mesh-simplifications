@@ -210,7 +210,7 @@ void Mesh::Paint(ArgParser *args) {
     }
     triangles->EndIteration(iter);
   }else{
-    
+    glColor3f(1,1,1); //set collor to white
     Iterator<Triangle*> *iter = triangles->StartIteration();
     while (Triangle *t = iter->GetNext()) {
       Vec3f a = (*t)[0]->get();
@@ -471,6 +471,32 @@ void Mesh::LoopSubdivision() {
 // =================================================================
 // SIMPLIFICATION
 // =================================================================
+
+void Mesh::collapseSelectedEdge(float x, float y, float z) {
+  Iterator<Edge*> *iter = edges->StartIteration();
+  Edge* shortestEdgeDistance = iter->GetNext();
+  Vertex* v1 = (*shortestEdgeDistance)[0];
+  Vertex* v2 = (*shortestEdgeDistance)[1];
+  Vec3f newPos = (v1->get() + v2->get()) * 0.5;
+  float shortestDistance = sqrt(pow((newPos.x()-x), 2) + pow((newPos.y()-y), 2) + pow((newPos.z()-z), 2));
+
+  while(Edge* e = iter->GetNext()) {
+    v1 = (*e)[0];
+    v2 = (*e)[1];
+    newPos = (v1->get() + v2->get()) * 0.5;
+    float distance = sqrt(pow((newPos.x()-x), 2) + pow((newPos.y()-y), 2) + pow((newPos.z()-z), 2));
+    if(distance < shortestDistance) {
+      shortestEdgeDistance = e;
+      shortestDistance = distance;
+    }
+  }
+  edges->EndIteration(iter);
+  bool gelukt = collapseEdge(shortestEdgeDistance);
+  if(!gelukt) {
+    printf("Onmogelijk deze edge te verwijderen");
+  }
+}
+
 
 void Mesh::Simplification(int target_tri_count) {
     printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);

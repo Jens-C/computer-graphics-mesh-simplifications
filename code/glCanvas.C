@@ -3,6 +3,8 @@
 // Included files for OpenGL Rendering
 #include <GL/gl.h>
 #include <GL/glut.h>
+#include <cstdlib>
+#include "mesh.h"
 
 // ========================================================
 // static variables of GLCanvas class
@@ -92,12 +94,48 @@ void GLCanvas::reshape(int w, int h) {
 // Callback function for mouse click or release
 // ========================================================
 
+// We added this function
+void GLCanvas::selectEdge(int x, int y) {
+    // Convert mouse coordinates to OpenGL's coordinate system
+    GLint viewport[4];
+    GLdouble modelview[16], projection[16];
+    GLfloat winX, winY, winZ;
+    GLdouble posX, posY, posZ;
+
+    glGetIntegerv(GL_VIEWPORT, viewport);
+    glGetDoublev(GL_MODELVIEW_MATRIX, modelview);
+    glGetDoublev(GL_PROJECTION_MATRIX, projection);
+
+    winX = (float)x;
+    winY = (float)viewport[3] - (float)y;
+    glReadPixels(x, int(winY), 1, 1, GL_DEPTH_COMPONENT, GL_FLOAT, &winZ);
+
+    gluUnProject(winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
+
+    std::cout << "Edge selected: " << posX << posY << posZ << std::endl;
+
+    // Now you have the world coordinates (posX, posY, posZ) where the mouse clicked
+    // Use these coordinates to select the edge
+    // for () {
+    //     // Compute the distance between the clicked point and the edge
+        
+    // }
+    mesh->collapseSelectedEdge((float) posX, (float) posY, (float) posZ);
+    Render();
+}
+
 void GLCanvas::mouse(int button, int state, int x, int y) {
   // Save the current state of the mouse.  This will be
   // used by the 'motion' function
   mouseButton = button;
   mouseX = x;
   mouseY = y;
+
+  // We added this
+  // If the left button is pressed and state is down
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+      selectEdge(x, y);
+  }
 }
 
 // ========================================================
@@ -111,6 +149,7 @@ void GLCanvas::motion(int x, int y) {
     camera->rotateCamera(0.005*(mouseX-x), 0.005*(mouseY-y));
     mouseX = x;
     mouseY = y;
+    printf("Start rotation \n");
   }
   // Middle button = translation
   // (move camera perpendicular to the direction vector)

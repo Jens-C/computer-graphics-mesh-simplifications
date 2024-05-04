@@ -87,7 +87,7 @@ public:
   void LoopSubdivision();
   void Simplification(int target_tri_count);
 
-  
+  void collapseSelectedEdge(float x, float y, float z);
 
   // We added this
   bool collapseEdge(Edge* triangle);
