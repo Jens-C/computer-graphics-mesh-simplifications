@@ -51,6 +51,10 @@ public:
     return qem;
   }
 
+  const Vec3f getNormal() const {
+    return normal;
+  }
+
   // added by us
   int getTriangleCount() const { 
     return triangleCount; 
@@ -74,6 +78,12 @@ public:
   // We added this
   void clearQEM() {
     qem = Eigen::Matrix4d::Zero();
+  }
+  void setNormal(Vec3f n) {
+    normal = n;
+  }
+  void addNormal(Vec3f n) {
+    normal += n;
   }
 
   // added by us
@@ -102,6 +112,9 @@ private:
 
     // Count of triangles associated with this vertex
   int triangleCount;
+
+  //normal of the vertex used in gouraud shading
+  Vec3f normal = Vec3f(0,0,0);
 
   // We added this
   // used for saving QEM of vertex

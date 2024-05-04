@@ -143,10 +143,6 @@ void Mesh::setParentsChild(Vertex *p1, Vertex *p2, Vertex *child) {
   vertex_parents->Add(new VertexParent(p1,p2,child));
 }
 
-// =======================================================================
-// PAINT
-// =======================================================================
-
 Vec3f ComputeNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
   Vec3f v12 = p2;
   v12 -= p1;
@@ -157,6 +153,25 @@ Vec3f ComputeNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
   normal.Normalize();
   return normal;
 }
+//calculate normals of the faces, then add them to the vertices (normal of face is not normalized yet )
+void Mesh::CalcNormals(){
+  Iterator<Triangle*> *iter = triangles->StartIteration();
+    while (Triangle *t = iter->GetNext()) {
+      Vec3f normal = ComputeNormal((*t)[0]->get(), (*t)[1]->get(), (*t)[2]->get());
+      normal.Normalize();
+      (*t)[0]->addNormal(normal);
+      (*t)[1]->addNormal(normal);
+      (*t)[2]->addNormal(normal);
+    }
+    triangles->EndIteration(iter);
+
+}
+
+// =======================================================================
+// PAINT
+// =======================================================================
+
+
 
 void InsertNormal(const Vec3f &p1, const Vec3f &p2, const Vec3f &p3) {
   Vec3f normal = ComputeNormal(p1,p2,p3);
@@ -178,19 +193,37 @@ void Mesh::Paint(ArgParser *args) {
   glPolygonOffset(1.1, 4.0);
 
   // draw the triangles
-  glColor3f(1,1,1);
-  Iterator<Triangle*> *iter = triangles->StartIteration();
-  glBegin (GL_TRIANGLES);
-  while (Triangle *t = iter->GetNext()) {
-    Vec3f a = (*t)[0]->get();
-    Vec3f b = (*t)[1]->get();
-    Vec3f c = (*t)[2]->get();
-    InsertNormal(a, b, c); 
-    glVertex3f(a.x(), a.y(), a.z());
-    glVertex3f(b.x(), b.y(), b.z());
-    glVertex3f(c.x(), c.y(), c.z());
+  glBegin (GL_TRIANGLES); 
+  if(args->gouraud){
+    CalcNormals();
+    glColor3f(1,1,1); //set collor to white 
+    Iterator<Triangle*> *iter = triangles->StartIteration();
+    while (Triangle *t = iter->GetNext()) {
+      for (int i = 0; i < 3; ++i) {
+        Vec3f vertex = (*t)[i]->get();
+        Vec3f normal = (*t)[i]->getNormal();
+        normal.Normalize();
+        //add normal for every vertex
+        glNormal3f(normal.x(), normal.y(), normal.z());
+        glVertex3f(vertex.x(), vertex.y(), vertex.z());
+      }
+    }
+    triangles->EndIteration(iter);
+  }else{
+    
+    Iterator<Triangle*> *iter = triangles->StartIteration();
+    while (Triangle *t = iter->GetNext()) {
+      Vec3f a = (*t)[0]->get();
+      Vec3f b = (*t)[1]->get();
+      Vec3f c = (*t)[2]->get();
+      InsertNormal(a, b, c); 
+      glVertex3f(a.x(), a.y(), a.z());
+      glVertex3f(b.x(), b.y(), b.z());
+      glVertex3f(c.x(), c.y(), c.z());
+    }
+    triangles->EndIteration(iter);
   }
-  triangles->EndIteration(iter);
+  
   glEnd();
 
   glDisable(GL_POLYGON_OFFSET_FILL); 
@@ -375,7 +408,7 @@ bool compareEdges(const Edge* a, const Edge* b) {
 void Mesh::calculateCostOfVerticesAndEdges() {
   edgesSorted.clear();
 
-  Iterator<Edge*>* iter = edges->StartIteration();
+  Iterator<Edge*> *iter = edges->StartIteration();
   while(Edge* e = iter->GetNext()) {
     Eigen::Matrix4d qem1_matrix = assignQEM(e);
     Eigen::Matrix4d qem2_matrix = assignQEM(e->getOpposite());
@@ -386,6 +419,7 @@ void Mesh::calculateCostOfVerticesAndEdges() {
     edgesSorted.push_back(e);
   }
   edges->EndIteration(iter);
+
 
   std::sort(edgesSorted.begin(), edgesSorted.end(), compareEdges);
   // Print the sorted list

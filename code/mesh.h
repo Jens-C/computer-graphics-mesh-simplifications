@@ -49,6 +49,7 @@ public:
     assert (v != NULL);
     return v; 
   }
+ void CalcNormals();
 
   // We implemented this
   void calculateCostOfVerticesAndEdges();
