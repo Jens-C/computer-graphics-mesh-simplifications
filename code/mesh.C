@@ -13,6 +13,7 @@
 #include "iostream"
 #include <cstdlib>
 #include <list>
+#include <chrono>
 
 
 #define INITIAL_VERTEX 10000
@@ -493,6 +494,7 @@ void Mesh::LoopSubdivision() {
 // SIMPLIFICATION
 // =================================================================
 
+// Collapse edge after selecting the edge with a point picker
 void Mesh::collapseSelectedEdge(float x, float y, float z) {
   Iterator<Edge*> *iter = edges->StartIteration();
   Edge* shortestEdgeDistance = iter->GetNext();
@@ -519,7 +521,11 @@ void Mesh::collapseSelectedEdge(float x, float y, float z) {
 }
 
 
+// Reduce the number of triangles to the desired count (target_tri_count)
 void Mesh::Simplification(int target_tri_count) {
+    // Start timing
+    auto start = std::chrono::high_resolution_clock::now();
+
     printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
 
     // We added everything from here in this function
@@ -532,14 +538,22 @@ void Mesh::Simplification(int target_tri_count) {
         while(!isCollapsed) {
           // Edge* e = edgesSorted[s-i-1];
           Edge* e = edgesSorted[i];
+          // Edge* e = edges->ChooseRandom();
           isCollapsed = collapseEdge(e);
           i++;
         }
     }
+
+    // End timing
+    auto end = std::chrono::high_resolution_clock::now();
+    // Calculate the duration
+    std::chrono::duration<double> duration = end - start;
+    // Output the duration in seconds
+    std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
 }
 
 
-// We added this function
+// We added this function to collapse an edge which can be selected by the quadratic error matric, random or with a point picker
 bool Mesh::collapseEdge(Edge* edge) {
   
   if (edge == NULL) return false;

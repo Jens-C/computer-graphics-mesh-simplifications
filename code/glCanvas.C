@@ -112,14 +112,8 @@ void GLCanvas::selectEdge(int x, int y) {
 
     gluUnProject(winX, winY, winZ, modelview, projection, viewport, &posX, &posY, &posZ);
 
-    //std::cout << "Edge selected: " << posX << posY << posZ << std::endl;
-
     // Now you have the world coordinates (posX, posY, posZ) where the mouse clicked
     // Use these coordinates to select the edge
-    // for () {
-    //     // Compute the distance between the clicked point and the edge
-        
-    // }
     mesh->collapseSelectedEdge((float) posX, (float) posY, (float) posZ);
     Render();
 }
@@ -133,9 +127,9 @@ void GLCanvas::mouse(int button, int state, int x, int y) {
 
   // We added this
   // If the left button is pressed and state is down
-  // if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-  //     selectEdge(x, y);
-  // }
+  if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+      selectEdge(x, y);
+  }
 }
 
 // ========================================================
@@ -191,7 +185,6 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
     // we added the second function
     mesh->Simplification((int)floor(0.9*mesh->numTriangles()));
     // mesh->Simplification(mesh->numTriangles()-1);
-
     Render();
     break;
   case 'q':  case 'Q':
