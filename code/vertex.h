@@ -118,7 +118,7 @@ private:
 
   // We added this
   // used for saving QEM of vertex
-  // Initialised very large 
+  // Initialised zero
   Eigen::Matrix4d qem = Eigen::Matrix4d::Zero();
 };
 

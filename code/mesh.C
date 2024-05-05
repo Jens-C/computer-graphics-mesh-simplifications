@@ -199,6 +199,8 @@ void Mesh::Paint(ArgParser *args) {
   // draw the triangles
   glBegin (GL_TRIANGLES); 
   if(args->gouraud){
+    //gouraud shading
+    //recalculate all the normals of all vertices
     CalcNormals();
     glColor3f(1,1,1); //set collor to white 
     Iterator<Triangle*> *iter = triangles->StartIteration();
@@ -207,13 +209,14 @@ void Mesh::Paint(ArgParser *args) {
         Vec3f vertex = (*t)[i]->get();
         Vec3f normal = (*t)[i]->getNormal();
         normal.Normalize();
-        //add normal for every vertex
+        //add normal for every vertex in triangle
         glNormal3f(normal.x(), normal.y(), normal.z());
         glVertex3f(vertex.x(), vertex.y(), vertex.z());
       }
     }
     triangles->EndIteration(iter);
   }else{
+    //flat shading
     glColor3f(1,1,1); //set collor to white
     Iterator<Triangle*> *iter = triangles->StartIteration();
     while (Triangle *t = iter->GetNext()) {
@@ -428,17 +431,18 @@ void Mesh::Load(const char *input_file) {
 
 
 void Mesh::calculateCostOfEdges(Array<Edge*> *EdgesToUpdate) {
-  //recreating intire list quicker then removing edges being removed and adding the new ones.
+  //recreating intire list quicker then removing the edges that are deleted from mesh and readding them
   edgesSorted.clear();
   Iterator<Edge*> *iter = edges->StartIteration();
   while(Edge* e = iter->GetNext()) {
     //only update cost of edges that are changed
       if(EdgesToUpdate->Member(e)){
         Vec3f newP = (e->getVertex()->get() + e->getOpposite()->getVertex()->get()) * 0.5;
-      // moved this to edge colapse function so we only do it for the vertices that changed
+      // moved this to edge colapse function so we only do it for the vertices that are changed
       //Eigen::Matrix4d qem1_matrix = assignQEM(e);
       //Eigen::Matrix4d qem2_matrix = assignQEM(e->getOpposite());
       Eigen::Vector4d v = Eigen::Vector4d(newP.x(), newP.y(), newP.z(), 1.0);
+      //calculate qem of the edge by summing the error of the two vertices
       float qem = std::abs(v.transpose().dot(e->getVertex()->getQem() * v)) + std::abs(v.transpose().dot(e->getOpposite()->getVertex()->getQem() * v));
       e->setQEM(qem);
     }
@@ -461,8 +465,10 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
     Vertex* v1 = edge->getVertex();
     Vertex* v2 = edge->getNext()->getVertex();
     Vertex* v3 = edge->getNext()->getNext()->getVertex();
+    //calculate normal of face
     Vec3f normal1 = ComputeNormal(v1->get(), v2->get(), v3->get());
     float d = -normal1.Dot3(v1->get());
+    //create error matrix
     Eigen::Matrix4d quadricMatrix = Eigen::Matrix4d::Zero();
     
     float a = 2.0;
@@ -474,11 +480,11 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
                     a*b, b*b, b*c, b*d,
                     a*c, b*c, c*c, d*c,
                     a*d, b*d, d*c, d*d;
-
+    //add error matrix of face to the total
     quadricMatrixTotal += quadricMatrix;
     edge = next_edge;
   } while(edge != e);
-
+  //save error matrix in vertex
   vertex->set(quadricMatrixTotal);
   return quadricMatrixTotal;
 }
@@ -511,8 +517,6 @@ void Mesh::exportToFile() {
 
     outFile.close();
     std::cout << "Mesh saved to " << "filename" << std::endl;
-    delete[] vertexid;
-
 }
 
 // =================================================================
@@ -550,9 +554,7 @@ void Mesh::collapseSelectedEdge(float x, float y, float z) {
 void Mesh::Simplification(int target_tri_count) {
     // Start timing
     auto start = std::chrono::high_resolution_clock::now();
-
     printf("Simplify the mesh! %d -> %d\n", numTriangles(), target_tri_count);
-
     // We added everything from here in this function
     // Perform simplification until the target number of triangles is reached
     while (numTriangles() > target_tri_count) {
@@ -569,7 +571,6 @@ void Mesh::Simplification(int target_tri_count) {
           i++;
         }
     }
-
     // End timing
     auto end = std::chrono::high_resolution_clock::now();
     // Calculate the duration
@@ -581,29 +582,22 @@ void Mesh::Simplification(int target_tri_count) {
 
 // We added this function to collapse an edge which can be selected by the quadratic error matric, random or with a point picker
 bool Mesh::collapseEdge(Edge* edge) {
-  
   if (edge == NULL) return false;
-
   // Get vertices and triangles involved in the edge collapse
   // Edge points to v1
-  
   Vertex* v1 = (*edge)[0]; // this is the vertex associated with the edge
   Vertex* v2 = (*edge)[1];
   Vec3f newPos = (v1->get() + v2->get()) * 0.5;
   v2->set(newPos);
-
   //get the triangles that are connected to the edge
   Triangle* t1 = edge->getTriangle();
   Triangle* t2 = edge->getOpposite()->getTriangle();
-
   // Get the next and previous half-edges of the edge
-
-  int end = 0;
   Edge* current = edge->getNext()->getOpposite();
   // store edge poiting to v2 that wont be changed
   Edge* pointTov2 = edge->getOpposite()->getNext()->getOpposite();
 
-  //check for illegal edge collapses
+  //check for illegal edge collapses(if same vertex is detected twice ->illegal colapse)
   Array<Vertex*> *vertTemp = new Array<Vertex*>(INITIAL_VERTEX);
   vertTemp->Add(v1);
   vertTemp->Add(edge->getNext()->getVertex());
@@ -611,7 +605,7 @@ bool Mesh::collapseEdge(Edge* edge) {
   //looping trough triangles connected to v1 and checking for double vertices
   while(current->getNext()->getOpposite()->getTriangle() != t2){
     if(vertTemp->Member(current->getNext()->getVertex())){
-      return false;
+      return false;//illegal colapse
     }
     vertTemp->Add(current->getNext()->getVertex());
     Edge* temp_next = current->getNext()->getOpposite();
@@ -622,7 +616,7 @@ bool Mesh::collapseEdge(Edge* edge) {
   //looping trough triangles cottectd to v2 and checking for double vertices
   while(current->getNext()->getOpposite()->getTriangle() != t1){
     if(vertTemp->Member(current->getNext()->getVertex())){
-      return false;
+      return false;//illegal colapse
     }
     vertTemp->Add(current->getNext()->getVertex());
     Edge* temp_next = current->getNext()->getOpposite();
@@ -633,6 +627,7 @@ bool Mesh::collapseEdge(Edge* edge) {
 
   current = edge->getNext()->getOpposite();
   //looping trough triangles connected to v1 and deleting and readding them with v2
+  int end = 0;
   while(end == 0) {
     if (current->getNext()->getOpposite()->getTriangle() == t2) {
       end = 1;
@@ -650,7 +645,8 @@ bool Mesh::collapseEdge(Edge* edge) {
   vertices->Remove(v1);   
   delete v1;
 
- //  update QEM for only for vertices and eges being changed
+ //update QEM for only for vertices and eges being changed
+ //instead of handeling every edge case for duplicate edge updates, just add all unique edges to list and loop trough them second time
   Array<Edge*> *EdgesToUpdate = new Array<Edge*>(INITIAL_VERTEX);
   current = pointTov2;
   assignQEM(pointTov2);
@@ -675,7 +671,7 @@ bool Mesh::collapseEdge(Edge* edge) {
     Edge* temp_next = current->getNext()->getOpposite();
     current = temp_next;
   }  while(current != pointTov2);
-  //calc cust of the edges
+  //calc cost of the edges
   calculateCostOfEdges(EdgesToUpdate);
   //avoid memory leaks
   delete vertTemp;
