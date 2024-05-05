@@ -83,6 +83,7 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   edges->Add(eb);
   edges->Add(ec);
 
+
   // connect up with opposite edges (if they exist)
   // getEdge returns the edge that exists between two points, these two points are accessed by [0] and [1]
   Edge *ea_op = getEdge((*ea)[1], (*ea)[0]);
@@ -98,11 +99,14 @@ void Mesh::addTriangle(Vertex *a, Vertex *b, Vertex *c) {
   triangles->Add(t); 
 }
 
+
+
 void Mesh::removeTriangle(Triangle *t) {
   Edge *ea = t->getEdge();
   Edge *eb = ea->getNext();
   Edge *ec = eb->getNext();
   assert (ec->getNext() == ea);
+  
 
   // remove elements from master lists
   // We added the if statements
@@ -112,6 +116,7 @@ void Mesh::removeTriangle(Triangle *t) {
     edges->Remove(eb);
   if (edges->Member(ec))
     edges->Remove(ec);
+
 
   
   // Check if the triangle is already removed before attempting to remove it
@@ -290,6 +295,9 @@ void Mesh::Paint(ArgParser *args) {
 // the basic format has been extended to allow the specification 
 // of crease weights on the edges.
 // =======================================================================
+bool compareEdges(const Edge* a, const Edge* b) {
+    return a->getQem() < b->getQem(); // Order by qem in ascending order
+}
 
 void Mesh::Load(const char *input_file) {
   
@@ -395,18 +403,8 @@ void Mesh::Load(const char *input_file) {
     }
   }
   // We added this function
-  calculateCostOfVerticesAndEdges();
-}
 
-
-bool compareEdges(const Edge* a, const Edge* b) {
-    return a->getQem() < b->getQem(); // Order by qem in ascending order
-}
-
-// We added this function
-void Mesh::calculateCostOfVerticesAndEdges() {
-  edgesSorted.clear();
-
+  //create the initial edgesSorted list
   Iterator<Edge*> *iter = edges->StartIteration();
   while(Edge* e = iter->GetNext()) {
     Eigen::Matrix4d qem1_matrix = assignQEM(e);
@@ -418,13 +416,39 @@ void Mesh::calculateCostOfVerticesAndEdges() {
     edgesSorted.push_back(e);
   }
   edges->EndIteration(iter);
-
-
   std::sort(edgesSorted.begin(), edgesSorted.end(), compareEdges);
-  // Print the sorted list
-  // for (const auto& edge : edgesSorted) {
-  //     std::cout << "QEM: " << edge->getQem() << std::endl;
-  // }
+}
+
+
+
+
+// We added this function
+
+
+
+
+void Mesh::calculateCostOfEdges(Array<Edge*> *EdgesToUpdate) {
+  //recreating intire list quicker then removing edges being removed and adding the new ones.
+  edgesSorted.clear();
+  Iterator<Edge*> *iter = edges->StartIteration();
+  while(Edge* e = iter->GetNext()) {
+    //only update cost of edges that are changed
+      if(EdgesToUpdate->Member(e)){
+        Vec3f newP = (e->getVertex()->get() + e->getOpposite()->getVertex()->get()) * 0.5;
+      // moved this to edge colapse function so we only do it for the vertices that changed
+      //Eigen::Matrix4d qem1_matrix = assignQEM(e);
+      //Eigen::Matrix4d qem2_matrix = assignQEM(e->getOpposite());
+      Eigen::Vector4d v = Eigen::Vector4d(newP.x(), newP.y(), newP.z(), 1.0);
+      float qem = std::abs(v.transpose().dot(e->getVertex()->getQem() * v)) + std::abs(v.transpose().dot(e->getOpposite()->getVertex()->getQem() * v));
+      e->setQEM(qem);
+    }
+    edgesSorted.push_back(e);
+  }
+  edges->EndIteration(iter);
+
+  //sorting list
+  std::sort(edgesSorted.begin(), edgesSorted.end(), compareEdges);
+
 }
 
 // We added this function
@@ -460,13 +484,14 @@ Eigen::Matrix4d Mesh::assignQEM(Edge* e) {
 }
 
 // =================================================================
-// SUBDIVISION
+// save mesh to file
 // =================================================================
 
-void Mesh::LoopSubdivision() {
+void Mesh::exportToFile() {
+  
   std::ofstream outFile("./data/out.obj");
     if (!outFile.is_open()) {
-        std::cerr << "Error: Unable to open file " << "out.obj" << " for writing." << std::endl;
+        std::cerr << "Error: Unable to open file " << "/data/out.obj" << " for writing." << std::endl;
         return;
     }
     int* vertexid = new int[numVertices()]; 
@@ -476,7 +501,6 @@ void Mesh::LoopSubdivision() {
         vertexid[getVertex(i)->getIndex()] = i+1;
         outFile << "v " << vertex.x() << " " << vertex.y() << " " << vertex.z() << std::endl;
     }
-
     // Write faces
       Iterator<Triangle*> *iter = triangles->StartIteration();
       while (Triangle *t = iter->GetNext()) {
@@ -487,6 +511,7 @@ void Mesh::LoopSubdivision() {
 
     outFile.close();
     std::cout << "Mesh saved to " << "filename" << std::endl;
+    delete[] vertexid;
 
 }
 
@@ -534,11 +559,12 @@ void Mesh::Simplification(int target_tri_count) {
         // Collapse the selected edge
         bool isCollapsed = false;
         int i = 0;
-        // int s = edgesSorted.size();
+         //int s = edgesSorted.size();
         while(!isCollapsed) {
-          // Edge* e = edgesSorted[s-i-1];
+          //Edge* e = edgesSorted[s-i-1];
           Edge* e = edgesSorted[i];
-          // Edge* e = edges->ChooseRandom();
+          assert(edgesSorted[i]!= NULL);
+          //Edge* e = edges->ChooseRandom();
           isCollapsed = collapseEdge(e);
           i++;
         }
@@ -560,6 +586,7 @@ bool Mesh::collapseEdge(Edge* edge) {
 
   // Get vertices and triangles involved in the edge collapse
   // Edge points to v1
+  
   Vertex* v1 = (*edge)[0]; // this is the vertex associated with the edge
   Vertex* v2 = (*edge)[1];
   Vec3f newPos = (v1->get() + v2->get()) * 0.5;
@@ -570,25 +597,18 @@ bool Mesh::collapseEdge(Edge* edge) {
   Triangle* t2 = edge->getOpposite()->getTriangle();
 
   // Get the next and previous half-edges of the edge
-  Edge* nextEdge = edge->getNext();
-  Edge* nextEdgeOpposite = edge->getNext()->getOpposite();
-  Edge* prevEdge = edge->getNext()->getNext();
-  Edge* prevEdgeOpposite = edge->getNext()->getNext()->getOpposite();
-  Edge* oppositeEdge = edge->getOpposite();
-  Edge* oppositeNext = oppositeEdge->getNext();
-  Edge* oppositeNextOpposite = oppositeEdge->getNext()->getOpposite();
-  Edge* oppositePrev = oppositeEdge->getNext()->getNext();
-  Edge* oppositePrevOpposite = oppositeEdge->getNext()->getNext()->getOpposite();
-  
+
   int end = 0;
   Edge* current = edge->getNext()->getOpposite();
+  // store edge poiting to v2 that wont be changed
+  Edge* pointTov2 = edge->getOpposite()->getNext()->getOpposite();
 
   //check for illegal edge collapses
   Array<Vertex*> *vertTemp = new Array<Vertex*>(INITIAL_VERTEX);
   vertTemp->Add(v1);
   vertTemp->Add(edge->getNext()->getVertex());
 
-  //looping trough triangles connected to v1
+  //looping trough triangles connected to v1 and checking for double vertices
   while(current->getNext()->getOpposite()->getTriangle() != t2){
     if(vertTemp->Member(current->getNext()->getVertex())){
       return false;
@@ -599,8 +619,7 @@ bool Mesh::collapseEdge(Edge* edge) {
   }
   current = edge->getOpposite()->getNext()->getOpposite();
   vertTemp->Add(edge->getOpposite()->getNext()->getVertex());
-  
-  //looping trough triangles cottectd to v2
+  //looping trough triangles cottectd to v2 and checking for double vertices
   while(current->getNext()->getOpposite()->getTriangle() != t1){
     if(vertTemp->Member(current->getNext()->getVertex())){
       return false;
@@ -631,7 +650,36 @@ bool Mesh::collapseEdge(Edge* edge) {
   vertices->Remove(v1);   
   delete v1;
 
-  calculateCostOfVerticesAndEdges();
+ //  update QEM for only for vertices and eges being changed
+  Array<Edge*> *EdgesToUpdate = new Array<Edge*>(INITIAL_VERTEX);
+  current = pointTov2;
+  assignQEM(pointTov2);
+  //loop around v2
+  do{
+    Edge* current2 = current->getNext();
+    Edge* pointTovx = current2;
+    //loop around every vertex surrounding v2
+    do{
+    EdgesToUpdate->AddNoDuplicates(current2);
+    EdgesToUpdate->AddNoDuplicates(current2->getNext());
+    EdgesToUpdate->AddNoDuplicates(current2->getNext()->getNext());
+    //printf("f%d\n",current2->getNext()->getVertex()->getIndex());
+      Edge* temp_next = current2->getNext()->getOpposite();
+      current2 = temp_next;
+    }while(current2 != pointTovx);
+    EdgesToUpdate->AddNoDuplicates(current);
+    EdgesToUpdate->AddNoDuplicates(current->getNext());
+    EdgesToUpdate->AddNoDuplicates(current->getNext()->getNext());
+    assignQEM(current->getNext());
+    //printf("d%d\n",current->getNext()->getVertex()->getIndex());
+    Edge* temp_next = current->getNext()->getOpposite();
+    current = temp_next;
+  }  while(current != pointTov2);
+  //calc cust of the edges
+  calculateCostOfEdges(EdgesToUpdate);
+  //avoid memory leaks
+  delete vertTemp;
+  delete EdgesToUpdate;
   return true;
 }
 

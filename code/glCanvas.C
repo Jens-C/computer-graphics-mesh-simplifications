@@ -178,13 +178,13 @@ void GLCanvas::keyboard(unsigned char key, int x, int y) {
     Render();
     break;
   case 's': case 'S':
-    mesh->LoopSubdivision();
+    mesh->exportToFile();
     Render();
     break;
   case 'd': case 'D':
     // we added the second function
     mesh->Simplification((int)floor(0.9*mesh->numTriangles()));
-    // mesh->Simplification(mesh->numTriangles()-1);
+    //mesh->Simplification(mesh->numTriangles()-1);
     Render();
     break;
   case 'q':  case 'Q':

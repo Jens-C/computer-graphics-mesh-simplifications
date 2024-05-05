@@ -71,8 +71,8 @@ public:
   }
 
   // We added this
-  void set(Eigen::Matrix4d qem) {
-    qem = qem;
+  void set(Eigen::Matrix4d q) {
+    qem = q;
   }
 
   // We added this

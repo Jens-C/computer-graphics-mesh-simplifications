@@ -52,7 +52,7 @@ public:
  void CalcNormals();
 
   // We implemented this
-  void calculateCostOfVerticesAndEdges();
+  void calculateCostOfEdges(Array<Edge*> *EdgesToUpdate);
 
   // We added this
   Eigen::Matrix4d assignQEM(Edge* edge);
@@ -84,7 +84,7 @@ public:
   // ===============
   // OTHER FUNCTIONS
   void Paint(ArgParser *args);
-  void LoopSubdivision();
+  void exportToFile();
   void Simplification(int target_tri_count);
 
   void collapseSelectedEdge(float x, float y, float z);
