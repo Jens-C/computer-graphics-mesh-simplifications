@@ -1,32 +1,13 @@
 # computer-graphics-mesh-simplification
 
-3,1-
-7,1-
-0,1-
-5,1-
-4,7-
-1,7-
-3,7-
-4,7-
-5,7-
-7,2-
-7,2-
-3,2-
-4,2-
-2,3-
-0,3-
-7,3-
-1,3-
-5,4-
-2,4-
-0,4-
-0,4-
-1,5-
-7,5-
-0,5-
-4,5-
-1,0-
-5,0-
-2,0-
-2,0-
-3,0-
+## Setup code (install Ubuntu)
+
+sudo apt-get update => sudo apt-get upgrade => sudo apt install mesa-utils libglu1-mesa-dev freeglut3-dev mesa-common-dev make g++
+
+## Show object
+
+make => ./adjacency -input “naam object”
+
+## Install Eigen library to work with matrices
+
+sudo apt-get install libeigen3-dev
